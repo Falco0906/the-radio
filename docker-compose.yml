@@ -24,8 +24,8 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production-min-256-bits}
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-dummy-spotify-client-id}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-dummy-spotify-secret}
       SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://localhost:8081/api/platforms/spotify/callback}
     ports:
       - "8081:8081"
@@ -41,7 +41,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - "5173:80"
     depends_on:
       - backend
     environment:

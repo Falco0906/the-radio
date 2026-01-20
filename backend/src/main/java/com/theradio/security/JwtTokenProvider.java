@@ -24,19 +24,19 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String email) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .subject(username)
+                .subject(email)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public String getUsernameFromToken(String token) {
+    public String getEmailFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
     }
 
@@ -57,7 +57,7 @@ public class JwtTokenProvider {
                 .getPayload();
     }
 
-    public Boolean validateToken(String token) {
+    public boolean validateToken(String token) {
         try {
             getAllClaimsFromToken(token);
             return !isTokenExpired(token);
@@ -66,9 +66,8 @@ public class JwtTokenProvider {
         }
     }
 
-    private Boolean isTokenExpired(String token) {
+    private boolean isTokenExpired(String token) {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());
     }
 }
-

@@ -32,9 +32,13 @@ public class AuthController {
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(java.util.Map.of("error", "Invalid email or password"));
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of("error", "Invalid email or password"));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(java.util.Map.of("error", e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "Login failed: " + e.getMessage()));
         }
     }
 

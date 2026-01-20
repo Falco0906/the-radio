@@ -7,6 +7,8 @@ import com.theradio.domain.model.User;
 import com.theradio.domain.repository.UserRepository;
 import com.theradio.security.JwtTokenProvider;
 import com.theradio.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,13 +20,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AuthService {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, 
-                      JwtTokenProvider tokenProvider, AuthenticationManager authenticationManager) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtTokenProvider tokenProvider,
+            AuthenticationManager authenticationManager
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
@@ -33,6 +42,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
@@ -44,27 +54,25 @@ public class AuthService {
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .username(request.getUsername())
-                .displayName(request.getDisplayName() != null ? request.getDisplayName() : request.getUsername())
+                .displayName(
+                        request.getDisplayName() != null
+                                ? request.getDisplayName()
+                                : request.getUsername()
+                )
                 .isLive(false)
                 .build();
 
         user = userRepository.save(user);
 
-        String token = tokenProvider.generateToken(user.getUsername());
+        String token = tokenProvider.generateToken(user.getEmail());
 
-        return AuthResponse.builder()
-                .token(token)
-                .user(AuthResponse.UserDto.builder()
-                        .id(user.getId())
-                        .email(user.getEmail())
-                        .username(user.getUsername())
-                        .displayName(user.getDisplayName())
-                        .isLive(user.getIsLive())
-                        .build())
-                .build();
+        return buildAuthResponse(user, token);
     }
 
     public AuthResponse login(LoginRequest request) {
+
+        logger.info("Login attempt for email: {}", request.getEmail());
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -73,12 +81,40 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        String token = tokenProvider.generateToken(userPrincipal.getUsername());
 
-        User user = userRepository.findByUsername(userPrincipal.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        UserPrincipal principal =
+                (UserPrincipal) authentication.getPrincipal();
 
+        User user = userRepository.findByEmail(principal.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException("User not found after login")
+                );
+
+        String token = tokenProvider.generateToken(user.getEmail());
+
+        logger.info("Login successful for user: {}", user.getEmail());
+
+        return buildAuthResponse(user, token);
+    }
+
+    public User getCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Not authenticated");
+        }
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found: " + email)
+                );
+    }
+
+    private AuthResponse buildAuthResponse(User user, String token) {
         return AuthResponse.builder()
                 .token(token)
                 .user(AuthResponse.UserDto.builder()
@@ -90,15 +126,4 @@ public class AuthService {
                         .build())
                 .build();
     }
-
-    public User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Not authenticated");
-        }
-        String username = authentication.getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
 }
-

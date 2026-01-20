@@ -46,6 +46,8 @@ public class SecurityConfig {
                 .requestMatchers("/", "/health").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/platforms/spotify/callback").permitAll()
+                .requestMatchers("/api/user/**").authenticated()
+                .requestMatchers("/api/platforms/**").authenticated()
                 .requestMatchers("/ws/**").permitAll() // WebSocket auth handled separately
                 .anyRequest().authenticated()
             )
@@ -72,11 +74,15 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "http://localhost",
+                "http://127.0.0.1"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*", "Authorization", "Content-Type", "Accept"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
