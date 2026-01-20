@@ -106,3 +106,8 @@ CREATE TRIGGER update_friend_requests_updated_at BEFORE UPDATE ON friend_request
 CREATE TRIGGER update_listening_state_updated_at BEFORE UPDATE ON listening_state
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Test data (optional - for development only)
+-- Password: password123 (BCrypt hash: $2a$10$slYQmyNdGzin7olVN3p5be0ysZzEeEqdGYeP36q/gxuLueFMW6YGy)
+INSERT INTO users (email, username, password_hash, display_name, is_live, created_at, updated_at)
+VALUES ('test@example.com', 'testuser', '$2a$10$slYQmyNdGzin7olVN3p5be0ysZzEeEqdGYeP36q/gxuLueFMW6YGy', 'Test User', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT DO NOTHING;

@@ -19,15 +19,19 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<AuthResponse.UserDto> getCurrentUser() {
-        User user = authService.getCurrentUser();
-        AuthResponse.UserDto userDto = AuthResponse.UserDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .username(user.getUsername())
-                .displayName(user.getDisplayName())
-                .isLive(user.getIsLive())
-                .build();
-        return ResponseEntity.ok(userDto);
+        try {
+            User user = authService.getCurrentUser();
+            AuthResponse.UserDto userDto = AuthResponse.UserDto.builder()
+                    .id(user.getId())
+                    .email(user.getEmail())
+                    .username(user.getUsername())
+                    .displayName(user.getDisplayName())
+                    .isLive(user.getIsLive())
+                    .build();
+            return ResponseEntity.ok(userDto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).build();
+        }
     }
 }
 
