@@ -1,0 +1,47 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  border-bottom: 2px solid var(--border-black);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-nav a {
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--border-black);
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.app-nav a:hover {
+  background-color: var(--border-black);
+  color: var(--bg-green);
+}
+
+.app-nav a {
+  color: var(--text-black);
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem;
+}
+
