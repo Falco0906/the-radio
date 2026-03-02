@@ -16,14 +16,11 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 
--- Platform types enum
-CREATE TYPE platform_type AS ENUM ('SPOTIFY', 'APPLE_MUSIC', 'YOUTUBE_MUSIC');
-
 -- User platform connections
 CREATE TABLE user_platform_connections (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    platform platform_type NOT NULL,
+    platform VARCHAR(50) NOT NULL,
     platform_user_id VARCHAR(255) NOT NULL,
     access_token TEXT NOT NULL,
     refresh_token TEXT,
@@ -69,7 +66,7 @@ CREATE INDEX idx_friends_friend_id ON friends(friend_id);
 CREATE TABLE listening_state (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    platform platform_type NOT NULL,
+    platform VARCHAR(50) NOT NULL,
     track_id VARCHAR(255),
     track_name VARCHAR(500),
     artist VARCHAR(500),

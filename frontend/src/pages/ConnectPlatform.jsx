@@ -15,35 +15,37 @@ const ConnectPlatform = () => {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    // Check for callback messages
     const error = searchParams.get('error')
-    const success = searchParams.get('success')
-    
+    const connected = searchParams.get('connected') // backend sends ?connected=soundcloud
+
     if (error) {
-      setMessage(error)
+      const errorMessages = {
+        invalid_state: 'OAuth session expired. Please try connecting again.',
+        soundcloud_auth_failed: 'SoundCloud authorization failed. Please try again.',
+      }
+      setMessage(errorMessages[error] || `Connection failed: ${error}`)
       setMessageType('error')
-      // Clear URL params
       window.history.replaceState({}, '', window.location.pathname)
-    } else if (success) {
-      setMessage(success)
+    } else if (connected) {
+      setMessage(`${connected.charAt(0).toUpperCase() + connected.slice(1)} connected successfully!`)
       setMessageType('success')
-      // Clear URL params and refresh connections
       window.history.replaceState({}, '', window.location.pathname)
-      fetchConnections()
     }
-    
+
     fetchConnections()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   const fetchConnections = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await apiClient.get('/api/platforms/connections')
       setConnections(response.data)
-      
-      // If user has at least one connection, allow them to proceed
-      if (response.data.length > 0) {
-        // Optionally auto-redirect after a delay
-      }
     } catch (error) {
       console.error('Failed to fetch connections:', error)
     } finally {
@@ -58,12 +60,58 @@ const ConnectPlatform = () => {
       if (response.data && response.data.authUrl) {
         window.location.href = response.data.authUrl
       } else {
-        setMessage('Failed to get authorization URL')
+        setMessage('Failed to get Spotify authorization URL')
         setMessageType('error')
       }
     } catch (error) {
       console.error('Failed to initiate Spotify connection:', error)
       const errorMsg = error.response?.data?.message || error.message || 'Failed to initiate Spotify connection'
+      setMessage(errorMsg)
+      setMessageType('error')
+    }
+  }
+
+  const connectSoundCloud = async () => {
+    try {
+      setMessage(null)
+
+      // Use the shared apiClient — it automatically adds the Authorization header
+      const response = await apiClient.get('/api/platforms/soundcloud/connect')
+
+      if (response.data?.url) {
+        window.location.href = response.data.url
+      } else {
+        setMessage('Failed to get SoundCloud authorization URL')
+        setMessageType('error')
+      }
+    } catch (error) {
+      console.error('Failed to initiate SoundCloud connection:', error)
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to initiate SoundCloud connection'
+      setMessage(errorMsg)
+      setMessageType('error')
+    }
+  }
+
+  const disconnectPlatform = async (platformName) => {
+    try {
+      setMessage(null)
+      const connection = connections.find(c => c.platform === platformName)
+      if (!connection) return
+
+      if (!window.confirm(`Are you sure you want to disconnect ${platformName}?`)) {
+        return
+      }
+
+      await apiClient.delete(`/api/platforms/connections/${connection.id}`)
+
+      setMessage(`${platformName.charAt(0).toUpperCase() + platformName.slice(1).toLowerCase()} disconnected successfully`)
+      setMessageType('success')
+
+      // Refresh connections list
+      fetchConnections()
+    } catch (error) {
+      console.error('Failed to disconnect platform:', error)
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to disconnect platform'
       setMessage(errorMsg)
       setMessageType('error')
     }
@@ -103,8 +151,36 @@ const ConnectPlatform = () => {
                     <span className="status-disconnected">Not Connected</span>
                   )}
                 </div>
-                {!connections.find(c => c.platform === 'SPOTIFY') && (
+                {connections.some(c => c.platform === 'SPOTIFY') ? (
+                  <button
+                    className="btn-disconnect"
+                    onClick={() => disconnectPlatform('SPOTIFY')}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
                   <button onClick={connectSpotify}>Connect</button>
+                )}
+              </div>
+
+              <div className="platform-item">
+                <div className="platform-info">
+                  <h3>SoundCloud</h3>
+                  {connections.find(c => c.platform === 'SOUNDCLOUD') ? (
+                    <span className="status-connected">Connected</span>
+                  ) : (
+                    <span className="status-disconnected">Not Connected</span>
+                  )}
+                </div>
+                {connections.some(c => c.platform === 'SOUNDCLOUD') ? (
+                  <button
+                    className="btn-disconnect"
+                    onClick={() => disconnectPlatform('SOUNDCLOUD')}
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button onClick={connectSoundCloud}>Connect</button>
                 )}
               </div>
 
@@ -136,4 +212,3 @@ const ConnectPlatform = () => {
 }
 
 export default ConnectPlatform
-

@@ -5,6 +5,7 @@ import com.theradio.auth.dto.LoginRequest;
 import com.theradio.auth.dto.RegisterRequest;
 import com.theradio.domain.model.User;
 import com.theradio.domain.repository.UserRepository;
+import com.theradio.exception.BusinessException;
 import com.theradio.security.JwtTokenProvider;
 import com.theradio.security.UserPrincipal;
 import org.slf4j.Logger;
@@ -44,10 +45,10 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new BusinessException("Email already in use");
         }
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already taken");
+            throw new BusinessException("Username already taken");
         }
 
         User user = User.builder()
@@ -64,7 +65,7 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        String token = tokenProvider.generateToken(user.getEmail());
+        String token = tokenProvider.generateToken(user.getEmail(), user.getId());
 
         return buildAuthResponse(user, token);
     }
@@ -90,7 +91,7 @@ public class AuthService {
                         new RuntimeException("User not found after login")
                 );
 
-        String token = tokenProvider.generateToken(user.getEmail());
+        String token = tokenProvider.generateToken(user.getEmail(), user.getId());
 
         logger.info("Login successful for user: {}", user.getEmail());
 

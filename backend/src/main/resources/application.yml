@@ -1,55 +1,81 @@
 spring:
   application:
     name: the-radio
-  
+
   datasource:
-    url: jdbc:postgresql://postgres:5432/theradio
+    url: jdbc:postgresql://localhost:5432/theradio
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-  
+
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-  
+        format_sql: false
+
   security:
     oauth2:
       client:
-        registration:
-          spotify:
-            client-id: ${SPOTIFY_CLIENT_ID:dummy}
-            client-secret: ${SPOTIFY_CLIENT_SECRET:dummy}
-            scope: user-read-currently-playing,user-read-playback-state
-            authorization-grant-type: authorization_code
-            redirect-uri: ${SPOTIFY_REDIRECT_URI:http://localhost:8081/api/platforms/spotify/callback}
         provider:
           spotify:
             authorization-uri: https://accounts.spotify.com/authorize
             token-uri: https://accounts.spotify.com/api/token
             user-info-uri: https://api.spotify.com/v1/me
+            user-name-attribute: id
+        registration:
+          spotify:
+            provider: spotify
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_basic
+            client-id: ${SPOTIFY_CLIENT_ID:dummy}
+            client-secret: ${SPOTIFY_CLIENT_SECRET:dummy}
+            redirect-uri: ${SPOTIFY_REDIRECT_URI:http://localhost:8081/api/platforms/spotify/callback}
 
 server:
-  port: 8081
+  port: ${PORT:8080}
   servlet:
     context-path: /
 
+# SoundCloud OAuth Configuration
+soundcloud:
+  client:
+    id: ${SOUNDCLOUD_CLIENT_ID:}
+    secret: ${SOUNDCLOUD_CLIENT_SECRET:}
+  redirect:
+    uri: ${SOUNDCLOUD_REDIRECT_URI:http://localhost:8081/api/platforms/soundcloud/callback}
+
+# Logging
+logging:
+  level:
+    com.theradio: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+
+# Application config (single source of truth - jwt.* block removed)
 app:
   jwt:
     secret: ${JWT_SECRET:your-secret-key-change-in-production-min-256-bits}
     expiration: 86400000 # 24 hours in milliseconds
-  
+
+  # Frontend URL used for OAuth callback redirects
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
+
+  # Backend URL used for OAuth callback redirects
+  backend-url: ${APP_BACKEND_URL:http://localhost:8080}
+
+  # Comma-separated list of allowed CORS origins
+  # Example for prod: https://theradio.app,https://www.theradio.app
+  allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
   spotify:
     api-base-url: https://api.spotify.com/v1
     polling-interval-seconds: 5
 
-logging:
-  level:
-    com.theradio: DEBUG
-    org.springframework.security: INFO
-    org.springframework.web: INFO
+  soundcloud:
+    api-base-url: https://api.soundcloud.com
+    polling-interval-seconds: 30
 

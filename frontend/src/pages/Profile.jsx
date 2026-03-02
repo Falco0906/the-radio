@@ -9,6 +9,7 @@ const Profile = () => {
   const [friends, setFriends] = useState([])
   const [friendRequests, setFriendRequests] = useState({ sent: [], received: [] })
   const [searchUsername, setSearchUsername] = useState('')
+  const [searchResults, setSearchResults] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const Profile = () => {
   const sendFriendRequest = async (recipientId) => {
     try {
       await apiClient.post('/api/friends/requests', { recipientId })
+      setSearchResults(prev => prev.filter(u => u.id !== recipientId))
       fetchFriendRequests()
     } catch (error) {
       console.error('Failed to send friend request:', error)
@@ -58,7 +60,7 @@ const Profile = () => {
 
   const removeFriend = async (friendId) => {
     if (!window.confirm('Remove this friend?')) return
-    
+
     try {
       await apiClient.delete(`/api/friends/${friendId}`)
       fetchFriends()
@@ -69,14 +71,14 @@ const Profile = () => {
 
   const searchUser = async () => {
     if (!searchUsername.trim()) return
-    
+
     setLoading(true)
     try {
-      // Note: This endpoint doesn't exist yet, but we can add it later
-      // For now, just show an error
-      alert('User search not implemented yet. Use user ID to send friend request.')
+      const response = await apiClient.get(`/api/friends/search?query=${searchUsername}`)
+      setSearchResults(response.data)
     } catch (error) {
       console.error('Failed to search user:', error)
+      alert('Search failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -86,7 +88,7 @@ const Profile = () => {
     <Layout>
       <div className="profile">
         <h1>Profile</h1>
-        
+
         <div className="profile-section">
           <h2>Your Info</h2>
           <div className="info-item">
@@ -101,22 +103,42 @@ const Profile = () => {
         </div>
 
         <div className="profile-section">
-          <h2>Add Friend</h2>
+          <h2>Find Friends</h2>
           <div className="add-friend-form">
             <input
               type="text"
-              placeholder="Enter user ID"
+              placeholder="Search by username..."
               value={searchUsername}
               onChange={(e) => setSearchUsername(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchUser()}
             />
             <button onClick={searchUser} disabled={loading}>
-              Search
+              {loading ? '...' : 'Search'}
             </button>
           </div>
-          <p className="text-muted mt-1">
-            Note: User search by username will be added in a future update.
-            For now, you need the user ID to send a friend request.
-          </p>
+
+          {searchResults.length > 0 && (
+            <div className="search-results mt-2">
+              {searchResults.map((result) => (
+                <div key={result.id} className="friend-request-item">
+                  <div>
+                    <strong>{result.displayName || result.username}</strong>
+                    <span className="text-muted"> @{result.username}</span>
+                  </div>
+                  <button
+                    className="btn-sm"
+                    onClick={() => sendFriendRequest(result.id)}
+                  >
+                    Add Friend
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {searchUsername && searchResults.length === 0 && !loading && (
+            <p className="text-muted mt-1 small">No users found.</p>
+          )}
         </div>
 
         {friendRequests.received.length > 0 && (

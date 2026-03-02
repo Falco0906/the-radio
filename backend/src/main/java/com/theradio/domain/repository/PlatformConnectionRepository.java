@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface PlatformConnectionRepository extends JpaRepository<PlatformConnection, Long> {
     List<PlatformConnection> findByUser(User user);
     Optional<PlatformConnection> findByUserAndPlatform(User user, PlatformType platform);
+    Optional<PlatformConnection> findByUserIdAndPlatform(Long userId, PlatformType platform);
     boolean existsByUserAndPlatform(User user, PlatformType platform);
+    boolean existsByUserIdAndPlatform(Long userId, PlatformType platform);
 }
 

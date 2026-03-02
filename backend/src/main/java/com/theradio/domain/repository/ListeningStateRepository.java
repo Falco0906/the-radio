@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface ListeningStateRepository extends JpaRepository<ListeningState, Long> {
     Optional<ListeningState> findByUser(User user);
     List<ListeningState> findByUserIn(List<User> users);
+    void deleteByUser(User user);
 }
 

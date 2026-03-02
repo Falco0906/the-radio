@@ -113,6 +113,19 @@ public class FriendsService {
                 .collect(Collectors.toList());
     }
 
+    public List<UserDto> searchUsers(String query) {
+        User currentUser = authService.getCurrentUser();
+        List<User> users = userRepository.searchUsers(query, currentUser.getId());
+        return users.stream()
+                .map(user -> UserDto.builder()
+                        .id(user.getId())
+                        .username(user.getUsername())
+                        .displayName(user.getDisplayName())
+                        .isLive(user.getIsLive())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void removeFriend(Long friendId) {
         User currentUser = authService.getCurrentUser();
@@ -274,6 +287,43 @@ public class FriendsService {
 
         public List<FriendRequestDto> getSent() { return sent; }
         public List<FriendRequestDto> getReceived() { return received; }
+    }
+
+    public static class UserDto {
+        private Long id;
+        private String username;
+        private String displayName;
+        private Boolean isLive;
+
+        public static UserDtoBuilder builder() {
+            return new UserDtoBuilder();
+        }
+
+        public static class UserDtoBuilder {
+            private Long id;
+            private String username;
+            private String displayName;
+            private Boolean isLive;
+
+            public UserDtoBuilder id(Long id) { this.id = id; return this; }
+            public UserDtoBuilder username(String username) { this.username = username; return this; }
+            public UserDtoBuilder displayName(String displayName) { this.displayName = displayName; return this; }
+            public UserDtoBuilder isLive(Boolean isLive) { this.isLive = isLive; return this; }
+
+            public UserDto build() {
+                UserDto dto = new UserDto();
+                dto.id = id;
+                dto.username = username;
+                dto.displayName = displayName;
+                dto.isLive = isLive;
+                return dto;
+            }
+        }
+
+        public Long getId() { return id; }
+        public String getUsername() { return username; }
+        public String getDisplayName() { return displayName; }
+        public Boolean getIsLive() { return isLive; }
     }
 }
 

@@ -31,6 +31,11 @@ public class FriendsController {
         return ResponseEntity.ok(friendsService.getFriendRequests());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<FriendsService.UserDto>> searchUsers(@RequestParam String query) {
+        return ResponseEntity.ok(friendsService.searchUsers(query));
+    }
+
     @PostMapping("/requests")
     public ResponseEntity<FriendRequestDto> sendFriendRequest(@RequestBody SendFriendRequestDto request) {
         var friendRequest = friendsService.sendFriendRequest(request.getRecipientId());

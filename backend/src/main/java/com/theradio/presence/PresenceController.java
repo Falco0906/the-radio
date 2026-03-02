@@ -14,11 +14,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/presence")
 public class PresenceController {
-    public PresenceController(AuthService authService, ListeningStateRepository listeningStateRepository, UserRepository userRepository, PresenceWebSocketService webSocketService) {
+    public PresenceController(AuthService authService, 
+                              ListeningStateRepository listeningStateRepository, 
+                              UserRepository userRepository, 
+                              PresenceWebSocketService webSocketService,
+                              ListeningStateService listeningStateService) {
         this.authService = authService;
         this.listeningStateRepository = listeningStateRepository;
         this.userRepository = userRepository;
         this.webSocketService = webSocketService;
+        this.listeningStateService = listeningStateService;
     }
 
 
@@ -26,6 +31,7 @@ public class PresenceController {
     private final ListeningStateRepository listeningStateRepository;
     private final UserRepository userRepository;
     private final PresenceWebSocketService webSocketService;
+    private final ListeningStateService listeningStateService;
 
     @GetMapping("/current")
     public ResponseEntity<ListeningStateDto> getCurrentPresence() {
@@ -35,6 +41,16 @@ public class PresenceController {
             return ResponseEntity.ok().build();
         }
 
+        return listeningStateRepository.findByUser(currentUser)
+                .map(state -> ResponseEntity.ok(ListeningStateDto.from(state)))
+                .orElse(ResponseEntity.ok().build());
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ListeningStateDto> refreshPresence() {
+        User currentUser = authService.getCurrentUser();
+        listeningStateService.refreshUserPresence(currentUser);
+        
         return listeningStateRepository.findByUser(currentUser)
                 .map(state -> ResponseEntity.ok(ListeningStateDto.from(state)))
                 .orElse(ResponseEntity.ok().build());

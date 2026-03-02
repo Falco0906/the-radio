@@ -29,27 +29,12 @@ public class SpotifyService {
     private final AuthService authService;
     private final UserRepository userRepository;
 
-    public String getAuthorizationUrl() {
-        User currentUser = authService.getCurrentUser();
-        String state = UUID.randomUUID().toString() + "_" + currentUser.getId();
+    public String getAuthorizationUrl(String state) {
         return apiClient.getAuthorizationUrl(state);
     }
 
     @Transactional
-    public void handleCallback(String code, String state) {
-        // Extract user ID from state parameter (format: {uuid}_{userId})
-        if (state == null || !state.contains("_")) {
-            throw new RuntimeException("Invalid state parameter");
-        }
-        
-        String userIdStr = state.substring(state.lastIndexOf("_") + 1);
-        Long userId;
-        try {
-            userId = Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Invalid state parameter: user ID not found");
-        }
-        
+    public void handleCallback(Long userId, String code) {
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

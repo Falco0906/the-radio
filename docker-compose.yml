@@ -20,12 +20,29 @@ services:
 
   backend:
     build: ./backend
+    env_file:
+      - .env
     environment:
-      DB_USERNAME: postgres
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/theradio
+      DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-min-256-bits}
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-dummy-spotify-client-id}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-dummy-spotify-secret}
+
+      # JWT — override with a strong secret in production
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-min-256-bits-long}
+
+      # CORS & redirect — set to your real domain in production
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:5173}
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:3000}
+
+      # SoundCloud OAuth
+      SOUNDCLOUD_CLIENT_ID: ${SOUNDCLOUD_CLIENT_ID}
+      SOUNDCLOUD_CLIENT_SECRET: ${SOUNDCLOUD_CLIENT_SECRET}
+      SOUNDCLOUD_REDIRECT_URI: ${SOUNDCLOUD_REDIRECT_URI}
+
+      # Spotify OAuth
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-your_spotify_client_id_here}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-your_spotify_client_secret_here}
       SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://localhost:8081/api/platforms/spotify/callback}
     ports:
       - "8081:8081"
@@ -39,14 +56,13 @@ services:
       retries: 3
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
     ports:
       - "5173:80"
+      - "5174:80"
     depends_on:
       - backend
-    environment:
-      - VITE_API_URL=http://localhost:8081
 
 volumes:
   postgres_data:
-

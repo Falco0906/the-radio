@@ -4,7 +4,7 @@ import axios from 'axios'
 // In dev mode, use relative URLs (Vite proxy handles /api -> localhost:8081)
 // In production, use the full base URL
 const apiClient = axios.create({
-  baseURL: import.meta.env.PROD ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081') : '',
+  baseURL: import.meta.env.PROD ? (import.meta.env.VITE_API_BASE_URL || '') : '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,14 +16,11 @@ apiClient.interceptors.request.use(
     // Don't add Authorization header for public endpoints
     const publicEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/logout']
     const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint))
-    
+
     if (!isPublicEndpoint) {
       const token = localStorage.getItem('token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
-        console.log('[API] Adding Authorization header:', config.url)
-      } else {
-        console.warn('[API] No token found in localStorage for request:', config.url)
       }
     }
     return config
@@ -39,23 +36,24 @@ apiClient.interceptors.response.use(
   (error) => {
     const url = error.config?.url || ''
     const status = error.response?.status
-    
+
+    // These endpoints should never trigger auto-logout on 401:
+    // - /api/user/me  (used to restore session on page load)
+    // - /api/platforms/ (OAuth and platform management — 401 here is not a session issue)
+    const noAutoLogoutPrefixes = ['/api/user/me', '/api/platforms/']
+    const shouldSkipAutoLogout = noAutoLogoutPrefixes.some(prefix => url.includes(prefix))
+
     // Don't handle auth errors for public endpoints
     const publicEndpoints = ['/api/auth/login', '/api/auth/register']
     const isPublicEndpoint = publicEndpoints.some(endpoint => url.includes(endpoint))
-    
-    if (!isPublicEndpoint && status === 401) {
-      // Only treat Unauthorized as invalid session
-      console.log(`[API] ${status} ${error.response?.statusText} - clearing token and redirecting to login`)
+
+    if (!isPublicEndpoint && status === 401 && !shouldSkipAutoLogout) {
       localStorage.removeItem('token')
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login'
       }
-    } else if (!isPublicEndpoint && status === 403) {
-      // Forbidden should not log the user out; surface error to caller/UI
-      console.warn(`[API] 403 Forbidden on ${url}`)
     }
-    
+
     return Promise.reject(error)
   }
 )

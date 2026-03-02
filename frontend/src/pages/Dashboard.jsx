@@ -32,9 +32,16 @@ const Dashboard = () => {
       return
     }
 
-    // Create Spotify deep link
-    const spotifyUrl = `https://open.spotify.com/track/${presence.trackId}`
-    window.open(spotifyUrl, '_blank')
+    if (presence.platform === 'SOUNDCLOUD') {
+      // SoundCloud doesn't have a standard ID-based URL that always works like Spotify, 
+      // but we can try to use a generic search or if we had the permalink.
+      // For now, we'll try to open a search for the track.
+      const query = encodeURIComponent(`${presence.trackName} ${presence.artist}`)
+      window.open(`https://soundcloud.com/search?q=${query}`, '_blank')
+    } else {
+      const spotifyUrl = `https://open.spotify.com/track/${presence.trackId}`
+      window.open(spotifyUrl, '_blank')
+    }
   }
 
   if (loading) {

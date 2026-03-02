@@ -55,3 +55,13 @@
   border-color: #00ff00;
 }
 
+.btn-disconnect {
+  background: transparent;
+  border: 2px solid var(--border-black);
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.btn-disconnect:hover {
+  background: rgba(255, 0, 0, 0.1);
+}

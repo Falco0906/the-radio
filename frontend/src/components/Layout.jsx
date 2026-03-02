@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import Playbar from './Playbar'
 import './Layout.css'
 
 const Layout = ({ children }) => {
@@ -18,6 +19,7 @@ const Layout = ({ children }) => {
         <nav className="app-nav">
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/profile">Profile</Link>
+          <Link to="/connect-platform">Platforms</Link>
           {user && (
             <button onClick={handleLogout} className="logout-btn">
               Logout
@@ -25,7 +27,10 @@ const Layout = ({ children }) => {
           )}
         </nav>
       </header>
-      <main className="app-main">{children}</main>
+      <main className="app-main" style={{ paddingBottom: '80px' }}>
+        {children}
+      </main>
+      <Playbar />
     </div>
   )
 }

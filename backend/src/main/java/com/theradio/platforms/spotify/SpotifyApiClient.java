@@ -50,17 +50,13 @@ public class SpotifyApiClient {
             throw new RuntimeException("Spotify Redirect URI is not configured. Please set SPOTIFY_REDIRECT_URI environment variable.");
         }
         String scope = "user-read-currently-playing user-read-playback-state";
-        try {
-            return String.format(
-                    "https://accounts.spotify.com/authorize?response_type=code&client_id=%s&redirect_uri=%s&scope=%s&state=%s",
-                    clientId,
-                    java.net.URLEncoder.encode(redirectUri, java.nio.charset.StandardCharsets.UTF_8),
-                    java.net.URLEncoder.encode(scope, java.nio.charset.StandardCharsets.UTF_8),
-                    java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8)
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate authorization URL", e);
-        }
+        return String.format(
+                "https://accounts.spotify.com/authorize?response_type=code&client_id=%s&redirect_uri=%s&scope=%s&state=%s",
+                clientId,
+                java.net.URLEncoder.encode(redirectUri, java.nio.charset.StandardCharsets.UTF_8),
+                java.net.URLEncoder.encode(scope, java.nio.charset.StandardCharsets.UTF_8),
+                java.net.URLEncoder.encode(state, java.nio.charset.StandardCharsets.UTF_8)
+        );
     }
 
     public SpotifyTokenResponse exchangeCodeForToken(String code) {

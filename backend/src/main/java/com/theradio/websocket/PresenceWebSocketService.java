@@ -58,6 +58,13 @@ public class PresenceWebSocketService {
                     message
             );
         }
+
+        // Also send to the user themselves
+        messagingTemplate.convertAndSendToUser(
+                user.getUsername(),
+                "/queue/presence",
+                message
+        );
     }
 
     public void broadcastPresenceOffline(User user) {
