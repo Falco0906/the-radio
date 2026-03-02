@@ -127,7 +127,7 @@ public class PlatformConnectionController {
         return ResponseEntity.ok(Map.of("url", url));
     }
 
-    @GetMapping("/spotify/connect")
+    @PostMapping("/spotify/connect")
     public ResponseEntity<?> connectSpotify(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -142,10 +142,15 @@ public class PlatformConnectionController {
         Long userId = jwtTokenProvider.getUserIdFromJWT(token);
         log.info("CONNECT SPOTIFY userId={}", userId);
 
-        String state = jwtTokenProvider.generateSpotifyStateToken(userId, Duration.ofMinutes(5));
-        String url = spotifyService.getAuthorizationUrl(state);
-
-        return ResponseEntity.ok(Map.of("url", url));
+        try {
+            String state = jwtTokenProvider.generateSpotifyStateToken(userId, Duration.ofMinutes(5));
+            String url = spotifyService.connect(state);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (Exception e) {
+            log.error("Spotify connection initiation failed for userId={}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Spotify connection failed: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/spotify/callback")

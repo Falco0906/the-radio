@@ -8,6 +8,8 @@ import com.theradio.domain.repository.PlatformConnectionRepository;
 import com.theradio.domain.repository.UserRepository;
 import com.theradio.platforms.spotify.dto.SpotifyTokenResponse;
 import com.theradio.platforms.spotify.dto.SpotifyUserInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,8 @@ import java.util.UUID;
 
 @Service
 public class SpotifyService {
+    private static final Logger log = LoggerFactory.getLogger(SpotifyService.class);
+
     public SpotifyService(SpotifyApiClient apiClient, PlatformConnectionRepository connectionRepository, AuthService authService, UserRepository userRepository) {
         this.apiClient = apiClient;
         this.connectionRepository = connectionRepository;
@@ -29,8 +33,17 @@ public class SpotifyService {
     private final AuthService authService;
     private final UserRepository userRepository;
 
+    public String connect(String state) {
+        try {
+            return apiClient.getAuthorizationUrl(state);
+        } catch (Exception e) {
+            log.error("Spotify initialization failed: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
     public String getAuthorizationUrl(String state) {
-        return apiClient.getAuthorizationUrl(state);
+        return connect(state);
     }
 
     @Transactional
