@@ -1,16 +1,14 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres}:5432/theradio
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${DATABASE_URL:}
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
 
 server:
-  port: 8081
+  port: ${PORT:8080}
 
 app:
   jwt:

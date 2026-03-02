@@ -3,14 +3,12 @@ spring:
     name: the-radio
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/theradio
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${DATABASE_URL:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
