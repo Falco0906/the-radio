@@ -1,10 +1,9 @@
 import axios from 'axios'
+import { API_BASE } from '../config/api'
 
 // Create axios instance with base configuration
-// In dev mode, use relative URLs (Vite proxy handles /api -> localhost:8081)
-// In production, use the full base URL
 const apiClient = axios.create({
-  baseURL: import.meta.env.PROD ? (import.meta.env.VITE_API_BASE_URL || '') : '',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },

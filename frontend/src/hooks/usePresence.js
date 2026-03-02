@@ -3,6 +3,7 @@ import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { useAuth } from '../contexts/AuthContext'
 import apiClient from '../api/axios'
+import { API_BASE } from '../config/api'
 
 export const usePresence = () => {
   const [presenceMap, setPresenceMap] = useState({})
@@ -41,7 +42,7 @@ export const usePresence = () => {
     fetchCurrentPresence()
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      webSocketFactory: () => new SockJS(API_BASE + '/ws'),
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
