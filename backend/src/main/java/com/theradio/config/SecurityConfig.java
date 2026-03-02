@@ -53,10 +53,12 @@ public class SecurityConfig {
                     "/api/auth/**",
                     "/ws/**",
                     "/api/platforms/soundcloud/callback",
-                    "/api/platforms/soundcloud/connect",
                     "/api/platforms/spotify/callback"
                 ).permitAll()
-                .requestMatchers("/api/platforms/spotify/connect").authenticated()
+                .requestMatchers(
+                    "/api/platforms/spotify/connect",
+                    "/api/platforms/soundcloud/connect"
+                ).authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

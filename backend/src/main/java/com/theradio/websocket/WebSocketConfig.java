@@ -1,6 +1,7 @@
 package com.theradio.websocket;
 
 import com.theradio.security.JwtTokenProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -26,6 +27,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
 
+    @Value("${app.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    private String allowedOrigins;
+
     public WebSocketConfig(
             JwtTokenProvider tokenProvider,
             UserDetailsService userDetailsService
@@ -43,8 +47,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] origins = java.util.Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
+
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:3000")
+                .setAllowedOrigins(origins)
                 .withSockJS();
     }
 
