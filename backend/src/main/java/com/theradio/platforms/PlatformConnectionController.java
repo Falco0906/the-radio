@@ -6,6 +6,7 @@ import com.theradio.domain.model.User;
 import com.theradio.domain.repository.ListeningStateRepository;
 import com.theradio.domain.repository.PlatformConnectionRepository;
 import com.theradio.platforms.soundcloud.SoundCloudService;
+import com.theradio.platforms.spotify.SpotifyService;
 import com.theradio.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
