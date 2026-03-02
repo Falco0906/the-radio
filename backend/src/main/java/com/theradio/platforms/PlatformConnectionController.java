@@ -145,7 +145,7 @@ public class PlatformConnectionController {
         try {
             String state = jwtTokenProvider.generateSpotifyStateToken(userId, Duration.ofMinutes(5));
             String url = spotifyService.connect(state);
-            return ResponseEntity.ok(Map.of("url", url));
+            return ResponseEntity.ok(Map.of("url", url, "authUrl", url));
         } catch (Exception e) {
             log.error("Spotify connection initiation failed for userId={}: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

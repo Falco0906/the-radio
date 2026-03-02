@@ -24,13 +24,13 @@ public class SpotifyApiClient {
     private static final Logger log = LoggerFactory.getLogger(com.theradio.platforms.spotify.SpotifyApiClient.class);
 
 
-    @Value("${spring.security.oauth2.client.registration.spotify.client-id}")
+    @Value("${app.spotify.client-id}")
     private String clientId;
 
-    @Value("${spring.security.oauth2.client.registration.spotify.client-secret}")
+    @Value("${app.spotify.client-secret}")
     private String clientSecret;
 
-    @Value("${spring.security.oauth2.client.registration.spotify.redirect-uri}")
+    @Value("${app.spotify.redirect-uri}")
     private String redirectUri;
 
     @Value("${app.spotify.api-base-url}")

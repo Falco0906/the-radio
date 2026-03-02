@@ -33,11 +33,43 @@ public class SpotifyService {
     private final AuthService authService;
     private final UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${app.spotify.client-id}")
+    private String clientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.spotify.client-secret}")
+    private String clientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.spotify.redirect-uri}")
+    private String redirectUri;
+
+    @jakarta.annotation.PostConstruct
+    public void validateConfig() {
+        log.info("Validating Spotify credentials in SpotifyService...");
+        log.info("SPOTIFY_CLIENT_ID: {}", clientId != null && !clientId.equals("dummy") ? "PRESENT" : "MISSING/DUMMY");
+        log.info("SPOTIFY_REDIRECT_URI: {}", redirectUri);
+
+        if (clientId == null || clientId.isEmpty() || clientId.equals("dummy") ||
+            clientSecret == null || clientSecret.isEmpty() || clientSecret.equals("dummy")) {
+            log.error("Spotify credentials are NOT configured correctly!");
+        }
+    }
+
     public String connect(String state) {
+        log.info("Initiating Spotify connection URL generation...");
+        log.info("State: {}", state);
+        log.info("ClientID: {}", clientId);
+        log.info("RedirectURI: {}", redirectUri);
+
+        if (clientId == null || clientId.isEmpty() || clientId.equals("dummy")) {
+            throw new IllegalStateException("Spotify environment variables not configured (client-id is missing or dummy)");
+        }
+
         try {
-            return apiClient.getAuthorizationUrl(state);
+            String url = apiClient.getAuthorizationUrl(state);
+            log.info("Successfully generated Spotify Auth URL: {}", url);
+            return url;
         } catch (Exception e) {
-            log.error("Spotify initialization failed: {}", e.getMessage(), e);
+            log.error("Failed to get Spotify authorization URL: {}", e.getMessage(), e);
             throw e;
         }
     }

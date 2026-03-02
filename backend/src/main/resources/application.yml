@@ -72,6 +72,9 @@ app:
   spotify:
     api-base-url: https://api.spotify.com/v1
     polling-interval-seconds: 5
+    client-id: ${SPOTIFY_CLIENT_ID:dummy}
+    client-secret: ${SPOTIFY_CLIENT_SECRET:dummy}
+    redirect-uri: ${SPOTIFY_REDIRECT_URI:https://the-radio-backend.onrender.com/api/platforms/spotify/callback}
 
   soundcloud:
     api-base-url: https://api.soundcloud.com
