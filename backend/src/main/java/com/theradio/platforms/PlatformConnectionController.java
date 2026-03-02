@@ -145,6 +145,13 @@ public class PlatformConnectionController {
         try {
             String state = jwtTokenProvider.generateSpotifyStateToken(userId, Duration.ofMinutes(5));
             String url = spotifyService.connect(state);
+            
+            if (url == null || url.isBlank()) {
+                log.error("Spotify service returned null/blank URL for userId={}", userId);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("message", "Spotify connection failed: Generated URL is empty"));
+            }
+
             return ResponseEntity.ok(Map.of("authorizationUrl", url));
         } catch (Exception e) {
             log.error("Spotify connection initiation failed for userId={}: {}", userId, e.getMessage(), e);

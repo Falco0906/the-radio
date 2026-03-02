@@ -66,6 +66,10 @@ public class SpotifyService {
 
         try {
             String url = apiClient.getAuthorizationUrl(state);
+            if (url == null || url.isBlank()) {
+                log.error("SpotifyApiClient returned null or blank URL for state: {}", state);
+                throw new IllegalStateException("Failed to generate Spotify authorization URL");
+            }
             log.info("Successfully generated Spotify Auth URL: {}", url);
             return url;
         } catch (Exception e) {
