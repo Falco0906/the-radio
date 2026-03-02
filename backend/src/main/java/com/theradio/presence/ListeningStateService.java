@@ -5,6 +5,7 @@ import com.theradio.domain.model.PlatformConnection;
 import com.theradio.domain.model.PlatformType;
 import com.theradio.domain.model.User;
 import com.theradio.domain.repository.ListeningStateRepository;
+import com.theradio.domain.repository.PlatformConnectionRepository;
 import com.theradio.platforms.spotify.SpotifyApiClient;
 import com.theradio.platforms.spotify.SpotifyService;
 import com.theradio.platforms.spotify.dto.SpotifyCurrentlyPlaying;
@@ -21,6 +22,7 @@ import java.util.Optional;
 @Service
 public class ListeningStateService {
     private final ListeningStateRepository listeningStateRepository;
+    private final PlatformConnectionRepository connectionRepository;
     private final SpotifyService spotifyService;
     private final SpotifyApiClient spotifyApiClient;
     private final SoundCloudService soundCloudService;
@@ -28,12 +30,14 @@ public class ListeningStateService {
     private final PresenceWebSocketService webSocketService;
 
     public ListeningStateService(ListeningStateRepository listeningStateRepository, 
-                                SpotifyService spotifyService, 
-                                SpotifyApiClient spotifyApiClient,
-                                SoundCloudService soundCloudService,
-                                SoundCloudApiClient soundCloudApiClient,
-                                PresenceWebSocketService webSocketService) {
+                                 PlatformConnectionRepository connectionRepository,
+                                 SpotifyService spotifyService, 
+                                 SpotifyApiClient spotifyApiClient,
+                                 SoundCloudService soundCloudService,
+                                 SoundCloudApiClient soundCloudApiClient,
+                                 PresenceWebSocketService webSocketService) {
         this.listeningStateRepository = listeningStateRepository;
+        this.connectionRepository = connectionRepository;
         this.spotifyService = spotifyService;
         this.spotifyApiClient = spotifyApiClient;
         this.soundCloudService = soundCloudService;
@@ -51,9 +55,6 @@ public class ListeningStateService {
 
         // Fetch all platform connections for this user
         // Note: For now we handle Spotify and SoundCloud
-        com.theradio.domain.repository.PlatformConnectionRepository connectionRepository = 
-            org.springframework.context.ApplicationContextHolder.getContext().getBean(com.theradio.domain.repository.PlatformConnectionRepository.class);
-        
         List<PlatformConnection> connections = connectionRepository.findByUser(user);
         
         for (PlatformConnection connection : connections) {
