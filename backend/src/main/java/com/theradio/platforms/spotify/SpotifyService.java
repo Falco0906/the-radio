@@ -150,26 +150,42 @@ public class SpotifyService {
                 ? OffsetDateTime.now().plusSeconds(tokenResponse.getExpiresIn())
                 : null;
 
-        if (existing != null) {
-            existing.setAccessToken(tokenResponse.getAccessToken());
-            existing.setRefreshToken(tokenResponse.getRefreshToken());
-            existing.setTokenExpiresAt(expiresAt);
-            existing.setPlatformUserId(userInfo.getId());
-            existing.setScopes(tokenResponse.getScope());
-            connectionRepository.save(existing);
-            log.info("Updated existing Spotify connection for user: {}", userId);
-        } else {
-            PlatformConnection connection = PlatformConnection.builder()
-                    .user(currentUser)
-                    .platform(PlatformType.SPOTIFY)
-                    .platformUserId(userInfo.getId())
-                    .accessToken(tokenResponse.getAccessToken())
-                    .refreshToken(tokenResponse.getRefreshToken())
-                    .tokenExpiresAt(expiresAt)
-                    .scopes(tokenResponse.getScope())
-                    .build();
-            connectionRepository.save(connection);
-            log.info("Created new Spotify connection for user: {}", userId);
+        try {
+            if (existing != null) {
+                existing.setAccessToken(tokenResponse.getAccessToken());
+                existing.setRefreshToken(tokenResponse.getRefreshToken());
+                existing.setTokenExpiresAt(expiresAt);
+                existing.setPlatformUserId(userInfo.getId());
+                existing.setScopes(tokenResponse.getScope());
+                connectionRepository.saveAndFlush(existing);
+                log.info("Updated existing Spotify connection for user: {}", userId);
+            } else {
+                if (userInfo.getId() == null) {
+                    throw new IllegalStateException("Spotify platformUserId is null");
+                }
+                if (tokenResponse.getAccessToken() == null) {
+                    throw new IllegalStateException("Spotify access token is null");
+                }
+
+                PlatformConnection connection = PlatformConnection.builder()
+                        .user(currentUser)
+                        .platform(PlatformType.SPOTIFY)
+                        .platformUserId(userInfo.getId())
+                        .accessToken(tokenResponse.getAccessToken())
+                        .refreshToken(tokenResponse.getRefreshToken())
+                        .tokenExpiresAt(expiresAt)
+                        .scopes(tokenResponse.getScope() != null ? tokenResponse.getScope() : "")
+                        .build();
+                connectionRepository.saveAndFlush(connection);
+                log.info("Created new Spotify connection for user: {}", userId);
+            }
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            String rootCause = e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : e.getMessage();
+            log.error("Data integrity violation while saving Spotify connection for user {}: {}", userId, rootCause, e);
+            throw new RuntimeException("db_save_failed: " + rootCause);
+        } catch (Exception e) {
+            log.error("Unexpected error saving Spotify connection for user {}: {}", userId, e.getMessage(), e);
+            throw e;
         }
     }
 
