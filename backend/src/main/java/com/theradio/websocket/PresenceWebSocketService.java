@@ -69,10 +69,6 @@ public class PresenceWebSocketService {
         String topic = "/topic/presence/" + userId;
         messagingTemplate.convertAndSend(topic, message);
         log.info("Sending WS message to: {}", topic);
-
-        // TEST TOPIC: Hardcoded for global debugging
-        messagingTemplate.convertAndSend("/topic/presence-test", message);
-        log.info("Sending WS message to: /topic/presence-test");
     }
 
     public void broadcastPresenceUpdate(User user, ListeningState state) {
