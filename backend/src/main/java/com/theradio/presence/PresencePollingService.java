@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class PresencePollingService {
      * We only poll users who have a Spotify connection.
      */
     @Scheduled(fixedDelay = 7000)
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public void pollSpotifyPresence() {
         log.trace("Polling Spotify presence for all connected users");
         
