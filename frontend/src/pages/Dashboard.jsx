@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import apiClient from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
-import Layout from '../components/Layout'
 import { usePresence } from '../hooks/usePresence'
+import Layout from '../components/Layout'
+import Playbox from '../components/Playbox'
 import './Dashboard.css'
 
 const Dashboard = () => {
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
-  const presenceMap = usePresence()
+  const { presenceMap } = usePresence()
 
   useEffect(() => {
     fetchFriends()
@@ -33,9 +34,6 @@ const Dashboard = () => {
     }
 
     if (presence.platform === 'SOUNDCLOUD') {
-      // SoundCloud doesn't have a standard ID-based URL that always works like Spotify, 
-      // but we can try to use a generic search or if we had the permalink.
-      // For now, we'll try to open a search for the track.
       const query = encodeURIComponent(`${presence.trackName} ${presence.artist}`)
       window.open(`https://soundcloud.com/search?q=${query}`, '_blank')
     } else {
@@ -62,53 +60,65 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {friends.length === 0 ? (
-          <div className="empty-state">
-            <p className="text-muted">No friends yet. Add friends to see what they're listening to.</p>
+        <div className="dashboard-grid">
+          <div className="my-station-section">
+            <h2>My Radio Station</h2>
+            <div className="card">
+              <Playbox presence={presenceMap[user?.id]} />
+            </div>
           </div>
-        ) : (
-          <div className="friends-list">
-            {friends.map((friend) => {
-              const presence = presenceMap[friend.id]
-              const isLive = presence && presence.type !== 'PRESENCE_OFFLINE'
 
-              return (
-                <div key={friend.id} className="friend-card">
-                  <div className="friend-header">
-                    <div className="friend-info">
-                      <span className={isLive ? 'status-live' : 'status-offline'}></span>
-                      <div>
-                        <div className="friend-name">{friend.displayName || friend.username}</div>
-                        <div className="friend-username text-muted">@{friend.username}</div>
-                      </div>
-                    </div>
-                    {isLive && (
-                      <button onClick={() => tuneIn(friend)}>Tune In</button>
-                    )}
-                  </div>
+          <div className="friends-station-section">
+            <h2>Friends' Radio Stations</h2>
+            {friends.length === 0 ? (
+              <div className="empty-state">
+                <p className="text-muted">No friends yet. Add friends to see what they're listening to.</p>
+              </div>
+            ) : (
+              <div className="friends-list">
+                {friends.map((friend) => {
+                  const presence = presenceMap[friend.id]
+                  const isLive = presence && presence.type !== 'PRESENCE_OFFLINE'
 
-                  {isLive && presence.trackName && (
-                    <div className="friend-listening">
-                      <div className="listening-track">
-                        <strong>{presence.trackName}</strong>
-                        <span className="text-muted"> by {presence.artist}</span>
+                  return (
+                    <div key={friend.id} className="friend-card">
+                      <div className="friend-header">
+                        <div className="friend-info">
+                          <span className={isLive ? 'status-live' : 'status-offline'}></span>
+                          <div>
+                            <div className="friend-name">{friend.displayName || friend.username}</div>
+                            <div className="friend-username text-muted">@{friend.username}</div>
+                          </div>
+                        </div>
+                        {isLive && (
+                          <button onClick={() => tuneIn(friend)}>Tune In</button>
+                        )}
                       </div>
-                      {presence.isPlaying && (
-                        <div className="waveform">
-                          <div className="waveform-bar"></div>
-                          <div className="waveform-bar"></div>
-                          <div className="waveform-bar"></div>
-                          <div className="waveform-bar"></div>
-                          <div className="waveform-bar"></div>
+
+                      {isLive && presence.trackName && (
+                        <div className="friend-listening">
+                          <div className="listening-track">
+                            <strong>{presence.trackName}</strong>
+                            <span className="text-muted"> by {presence.artist}</span>
+                          </div>
+                          {presence.isPlaying && (
+                            <div className="waveform">
+                              <div className="waveform-bar"></div>
+                              <div className="waveform-bar"></div>
+                              <div className="waveform-bar"></div>
+                              <div className="waveform-bar"></div>
+                              <div className="waveform-bar"></div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </Layout>
   )
@@ -159,4 +169,3 @@ const LiveToggle = () => {
 }
 
 export default Dashboard
-

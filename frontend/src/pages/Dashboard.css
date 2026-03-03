@@ -27,6 +27,25 @@
   gap: 1rem;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.my-station-section h2,
+.friends-station-section h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
 .friend-card {
   border: 2px solid var(--border-black);
   padding: 1.5rem;
@@ -63,4 +82,3 @@
 .listening-track {
   margin-bottom: 0.5rem;
 }
-

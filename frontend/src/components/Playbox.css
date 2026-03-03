@@ -1,0 +1,78 @@
+.playbox {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.playbox-title {
+    margin: 0;
+    font-size: 0.875rem;
+    opacity: 0.8;
+    border: none;
+    padding: 0;
+}
+
+.playbox .track-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.playbox .album-art {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border-black);
+    object-fit: cover;
+}
+
+.playbox .album-art-fallback {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border-black);
+    background-color: var(--border-black);
+    opacity: 0.1;
+}
+
+.playbox .text-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playbox .track-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+}
+
+.playbox .artist-name {
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playbox .platform-info {
+    margin-top: 0.25rem;
+}
+
+.platform-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--border-black);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.platform-badge.spotify {
+    background-color: #1DB954;
+    color: white;
+}
+
+.platform-badge.soundcloud {
+    background-color: #FF3300;
+    color: white;
+}
+
+/* Specific styling for when nested in Bar vs Card will be handled by parent */
