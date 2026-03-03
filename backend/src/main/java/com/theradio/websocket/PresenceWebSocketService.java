@@ -6,11 +6,15 @@ import com.theradio.domain.repository.FriendRepository;
 import com.theradio.domain.repository.ListeningStateRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Service
 public class PresenceWebSocketService {
+    private static final Logger log = LoggerFactory.getLogger(PresenceWebSocketService.class);
+
     public PresenceWebSocketService(SimpMessagingTemplate messagingTemplate, FriendRepository friendRepository, ListeningStateRepository listeningStateRepository) {
         this.messagingTemplate = messagingTemplate;
         this.friendRepository = friendRepository;
@@ -27,11 +31,6 @@ public class PresenceWebSocketService {
         if (!user.getIsLive()) {
             return;
         }
-
-        // Get all friends of this user
-        List<User> friends = friendRepository.findByUser(user).stream()
-                .map(f -> f.getFriend())
-                .toList();
 
         // Create presence update message
         PresenceUpdateMessage message = PresenceUpdateMessage.builder()
@@ -50,21 +49,12 @@ public class PresenceWebSocketService {
                 .updatedAt(state.getUpdatedAt())
                 .build();
 
-        // Send to each friend
-        for (User friend : friends) {
-            messagingTemplate.convertAndSendToUser(
-                    friend.getUsername(),
-                    "/queue/presence",
-                    message
-            );
-        }
-
-        // Also send to the user themselves
-        messagingTemplate.convertAndSendToUser(
-                user.getUsername(),
-                "/queue/presence",
+        // Broadcast presence update to specific user topic
+        messagingTemplate.convertAndSend(
+                "/topic/presence/" + user.getId(),
                 message
         );
+        log.info("Broadcasted presence update to /topic/presence/{}", user.getId());
     }
 
     public void broadcastPresencePlaybackState(User user, String status) {

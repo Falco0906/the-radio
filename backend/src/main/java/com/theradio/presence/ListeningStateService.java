@@ -170,6 +170,10 @@ public class ListeningStateService {
             String artistName = track.getArtists() != null && track.getArtists().length > 0
                     ? track.getArtists()[0].getName()
                     : "Unknown Artist";
+            String trackName = track.getName();
+
+            log.info("Updating listening state for user {} with track: {} - {}",
+                    userId, artistName, trackName);
 
             String albumArtUrl = null;
             if (track.getAlbum() != null && track.getAlbum().getImages() != null && track.getAlbum().getImages().length > 0) {
@@ -207,6 +211,7 @@ public class ListeningStateService {
             state.setUpdatedAt(java.time.OffsetDateTime.now());
 
             ListeningState savedState = listeningStateRepository.save(state);
+            log.info("Saved listening state to DB for user {}", userId);
             webSocketService.broadcastPresenceUpdate(user, savedState);
 
         } catch (Exception e) {
