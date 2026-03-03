@@ -4,6 +4,7 @@ import com.theradio.domain.model.ListeningState;
 import com.theradio.domain.model.User;
 import com.theradio.domain.repository.FriendRepository;
 import com.theradio.domain.repository.ListeningStateRepository;
+import com.theradio.domain.repository.UserRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -15,34 +16,39 @@ import java.util.List;
 public class PresenceWebSocketService {
     private static final Logger log = LoggerFactory.getLogger(PresenceWebSocketService.class);
 
-    public PresenceWebSocketService(SimpMessagingTemplate messagingTemplate, FriendRepository friendRepository, ListeningStateRepository listeningStateRepository) {
-        this.messagingTemplate = messagingTemplate;
-        this.friendRepository = friendRepository;
-        this.listeningStateRepository = listeningStateRepository;
-    }
-
-
     private final SimpMessagingTemplate messagingTemplate;
     private final FriendRepository friendRepository;
     private final ListeningStateRepository listeningStateRepository;
+    private final UserRepository userRepository;
 
-    public void broadcastPresenceUpdate(User user, ListeningState state) {
-        // Only broadcast if user is live
-        if (!user.getIsLive()) {
+    public PresenceWebSocketService(SimpMessagingTemplate messagingTemplate, 
+                                    FriendRepository friendRepository, 
+                                    ListeningStateRepository listeningStateRepository,
+                                    UserRepository userRepository) {
+        this.messagingTemplate = messagingTemplate;
+        this.friendRepository = friendRepository;
+        this.listeningStateRepository = listeningStateRepository;
+        this.userRepository = userRepository;
+    }
+
+    public void broadcastPresenceUpdate(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.error("Cannot broadcast: User not found with ID {}", userId);
             return;
         }
 
-        Long userId = user.getId();
-        
-        // Step 1 - Fetch fresh from DB to ensure payload integrity
-        ListeningState updated = listeningStateRepository.findByUserId(userId)
-                .orElse(state); // Fallback to passed state if not found
+        ListeningState updated = listeningStateRepository.findByUserId(userId).orElse(null);
+        if (updated == null) {
+            log.warn("Cannot broadcast: No ListeningState found for user {}", userId);
+            return;
+        }
 
         log.info("Broadcasting presence payload: isPlaying={}, track={}",
                 updated.getIsPlaying(),
                 updated.getTrackName());
 
-        // Create presence update message from fresh data
+        // Create presence update message
         PresenceUpdateMessage message = PresenceUpdateMessage.builder()
                 .type("PRESENCE_UPDATE")
                 .userId(userId)
@@ -59,7 +65,7 @@ public class PresenceWebSocketService {
                 .updatedAt(updated.getUpdatedAt())
                 .build();
 
-        // Broadcast presence update to specific user topic
+        // Broadcast to specific user topic
         String topic = "/topic/presence/" + userId;
         messagingTemplate.convertAndSend(topic, message);
         log.info("Sending WS message to: {}", topic);
@@ -67,6 +73,11 @@ public class PresenceWebSocketService {
         // TEST TOPIC: Hardcoded for global debugging
         messagingTemplate.convertAndSend("/topic/presence-test", message);
         log.info("Sending WS message to: /topic/presence-test");
+    }
+
+    public void broadcastPresenceUpdate(User user, ListeningState state) {
+        // Redirect to ID-based broadcast for consistency and fresh fetch
+        broadcastPresenceUpdate(user.getId());
     }
 
     public void broadcastPresencePlaybackState(User user, String status) {

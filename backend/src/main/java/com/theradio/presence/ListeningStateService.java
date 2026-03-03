@@ -185,13 +185,8 @@ public class ListeningStateService {
             ListeningState state;
             if (existingState.isPresent()) {
                 state = existingState.get();
-                if (track.getId().equals(state.getTrackId()) && state.getIsPlaying() == currentlyPlaying.getIsPlaying()) {
-                    state.setProgressMs(currentlyPlaying.getProgressMs() != null ? currentlyPlaying.getProgressMs() : 0);
-                    state.setUpdatedAt(java.time.OffsetDateTime.now());
-                    listeningStateRepository.save(state);
-                    return;
-                }
-                log.info("User {} track changed: {} - {}", user.getUsername(), track.getName(), artistName);
+                // We no longer return early here to ensure on every poll we broadcast to WS
+                log.info("User {} exists in DB, updating state...", user.getUsername());
                 state.setPlatform(PlatformType.SPOTIFY);
             } else {
                 log.info("User {} started playing: {} - {}", user.getUsername(), track.getName(), artistName);
@@ -210,9 +205,11 @@ public class ListeningStateService {
             state.setIsPlaying(currentlyPlaying.getIsPlaying() != null ? currentlyPlaying.getIsPlaying() : false);
             state.setUpdatedAt(java.time.OffsetDateTime.now());
 
-            ListeningState savedState = listeningStateRepository.save(state);
+            ListeningState savedState = listeningStateRepository.saveAndFlush(state);
             log.info("Saved listening state to DB for user {}", userId);
-            webSocketService.broadcastPresenceUpdate(user, savedState);
+            
+            // Explicitly broadcast by ID every time
+            webSocketService.broadcastPresenceUpdate(userId);
 
         } catch (Exception e) {
             log.error("Exception in updateListeningState for user {}: {}", userId, e.getMessage(), e);
