@@ -65,10 +65,13 @@ public class PresenceWebSocketService {
                 .updatedAt(updated.getUpdatedAt())
                 .build();
 
-        // Broadcast to specific user topic
-        String topic = "/topic/presence/" + userId;
-        messagingTemplate.convertAndSend(topic, message);
-        log.info("Sending WS message to: {}", topic);
+        // Send to the user themselves via a private queue
+        messagingTemplate.convertAndSendToUser(
+                user.getUsername(),
+                "/queue/presence",
+                message
+        );
+        log.info("Sent private WS presence update to user: {} at /user/queue/presence", user.getUsername());
     }
 
     public void broadcastPresenceUpdate(User user, ListeningState state) {
