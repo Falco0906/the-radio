@@ -140,11 +140,10 @@ public class PlatformConnectionController {
         }
 
         Long userId = jwtTokenProvider.getUserIdFromJWT(token);
-        log.info("CONNECT SPOTIFY userId={}", userId);
+        log.info("CONNECT SPOTIFY request for userId={}", userId);
 
         try {
-            String state = jwtTokenProvider.generateSpotifyStateToken(userId, Duration.ofMinutes(5));
-            String url = spotifyService.connect(state);
+            String url = spotifyService.initiateConnect(userId);
             
             if (url == null || url.isBlank()) {
                 log.error("Spotify service returned null/blank URL for userId={}", userId);
@@ -162,26 +161,44 @@ public class PlatformConnectionController {
 
     @GetMapping("/spotify/callback")
     public ResponseEntity<Void> handleSpotifyCallback(
-            @RequestParam String code,
-            @RequestParam String state,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String state,
             @RequestParam(required = false) String error) {
 
-        log.info("Spotify OAuth callback received");
+        log.info("Spotify OAuth callback hit. Code: {}, State: {}, Error: {}", 
+                code != null ? "PRESENT" : "MISSING", 
+                state != null ? state : "MISSING", 
+                error != null ? error : "NONE");
 
-        Long userId;
-        try {
-            userId = jwtTokenProvider.getUserIdFromSpotifyStateToken(state);
-        } catch (Exception e) {
-            log.warn("Invalid OAuth state token during Spotify callback", e);
+        if (error != null) {
+            log.warn("Spotify returned error param: {}", error);
             return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/connect-platform?error=invalid_state"))
+                .location(URI.create(frontendUrl + "/connect-platform?error=spotify_" + error))
                 .build();
         }
 
-        if (error != null) {
-            log.warn("Spotify authorization denied: {}", error);
+        if (state == null || state.isBlank()) {
+            log.warn("Spotify callback missing state parameter");
             return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/connect-platform?error=spotify_auth_failed"))
+                .location(URI.create(frontendUrl + "/connect-platform?error=missing_state"))
+                .build();
+        }
+
+        if (code == null || code.isBlank()) {
+            log.warn("Spotify callback missing code parameter");
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/connect-platform?error=missing_code"))
+                .build();
+        }
+
+        Long userId;
+        try {
+            userId = spotifyService.validateState(state);
+        } catch (Exception e) {
+            log.warn("Spotify state validation failed: {}", e.getMessage());
+            String errorType = e.getMessage().contains("expired") ? "state_expired" : "state_mismatch";
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/connect-platform?error=" + errorType))
                 .build();
         }
 
@@ -192,9 +209,10 @@ public class PlatformConnectionController {
                 .location(URI.create(frontendUrl + "/connect-platform?connected=spotify"))
                 .build();
         } catch (Exception e) {
-            log.error("Spotify token exchange failed for userId={}: {}", userId, e.getMessage(), e);
+            log.error("Spotify token exchange failed for userId={}: {}", userId, e.getMessage());
+            String errorParam = e.getMessage(); // handleCallback throws specific keys
             return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/connect-platform?error=spotify_auth_failed"))
+                .location(URI.create(frontendUrl + "/connect-platform?error=" + errorParam))
                 .build();
         }
     }

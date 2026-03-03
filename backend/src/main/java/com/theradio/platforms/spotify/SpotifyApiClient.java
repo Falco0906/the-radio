@@ -46,6 +46,11 @@ public class SpotifyApiClient {
 
     @jakarta.annotation.PostConstruct
     public void validateConfig() {
+        String envRedirectUri = System.getenv("SPOTIFY_REDIRECT_URI");
+        if (envRedirectUri != null && !envRedirectUri.isBlank()) {
+            this.redirectUri = envRedirectUri;
+        }
+
         log.info("Validating Spotify Configuration...");
         log.info("SPOTIFY_CLIENT_ID: {}", clientId != null ? (clientId.equals("dummy") ? "NOT_CONFIGURED (dummy)" : "PRESENT") : "NULL");
         log.info("SPOTIFY_REDIRECT_URI: {}", redirectUri);
@@ -90,14 +95,29 @@ public class SpotifyApiClient {
         formData.add("code", code);
         formData.add("redirect_uri", redirectUri);
 
-        return webClient.post()
-                .uri("/api/token")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(SpotifyTokenResponse.class)
-                .block();
+        log.info("Exchanging Spotify code for token. Redirect URI: {}", redirectUri);
+
+        try {
+            return webClient.post()
+                    .uri("/api/token")
+                    .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedAuth)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                    .body(BodyInserters.fromFormData(formData))
+                    .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), response -> {
+                        return response.bodyToMono(String.class)
+                                .flatMap(body -> {
+                                    log.error("Spotify token exchange failed. Status: {}, Body: {}", 
+                                            response.statusCode(), body);
+                                    return Mono.error(new RuntimeException("Spotify token exchange failed: " + body));
+                                });
+                    })
+                    .bodyToMono(SpotifyTokenResponse.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Exception during Spotify token exchange: {}", e.getMessage());
+            throw e;
+        }
     }
 
     public SpotifyTokenResponse refreshToken(String refreshToken) {

@@ -6,6 +6,8 @@ import com.theradio.domain.model.PlatformType;
 import com.theradio.domain.model.User;
 import com.theradio.domain.repository.PlatformConnectionRepository;
 import com.theradio.domain.repository.UserRepository;
+import com.theradio.domain.repository.SpotifyAuthStateRepository;
+import com.theradio.domain.model.SpotifyAuthState;
 import com.theradio.platforms.spotify.dto.SpotifyTokenResponse;
 import com.theradio.platforms.spotify.dto.SpotifyUserInfo;
 import org.slf4j.Logger;
@@ -20,11 +22,16 @@ import java.util.UUID;
 public class SpotifyService {
     private static final Logger log = LoggerFactory.getLogger(SpotifyService.class);
 
-    public SpotifyService(SpotifyApiClient apiClient, PlatformConnectionRepository connectionRepository, AuthService authService, UserRepository userRepository) {
+    public SpotifyService(SpotifyApiClient apiClient, 
+                          PlatformConnectionRepository connectionRepository, 
+                          AuthService authService, 
+                          UserRepository userRepository,
+                          SpotifyAuthStateRepository authStateRepository) {
         this.apiClient = apiClient;
         this.connectionRepository = connectionRepository;
         this.authService = authService;
         this.userRepository = userRepository;
+        this.authStateRepository = authStateRepository;
     }
 
 
@@ -32,6 +39,7 @@ public class SpotifyService {
     private final PlatformConnectionRepository connectionRepository;
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final SpotifyAuthStateRepository authStateRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.spotify.client-id}")
     private String clientId;
@@ -52,6 +60,42 @@ public class SpotifyService {
             clientSecret == null || clientSecret.isEmpty() || clientSecret.equals("dummy")) {
             log.error("Spotify credentials are NOT configured correctly!");
         }
+    }
+
+    @Transactional
+    public String initiateConnect(Long userId) {
+        log.info("Initiating Spotify connection for userId: {}", userId);
+        
+        String state = UUID.randomUUID().toString();
+        SpotifyAuthState authState = SpotifyAuthState.builder()
+                .state(state)
+                .userId(userId)
+                .expiresAt(OffsetDateTime.now().plusMinutes(10))
+                .build();
+        
+        authStateRepository.save(authState);
+        log.info("Saved Spotify auth state to DB for userId: {}", userId);
+
+        return apiClient.getAuthorizationUrl(state);
+    }
+
+    @Transactional
+    public Long validateState(String state) {
+        log.info("Validating Spotify auth state: {}", state);
+        
+        SpotifyAuthState authState = authStateRepository.findByState(state)
+                .orElseThrow(() -> new RuntimeException("state_mismatch"));
+
+        if (authState.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            authStateRepository.delete(authState);
+            throw new RuntimeException("state_expired");
+        }
+
+        Long userId = authState.getUserId();
+        authStateRepository.delete(authState);
+        log.info("Validated and deleted Spotify auth state for userId: {}", userId);
+        
+        return userId;
     }
 
     public String connect(String state) {
@@ -85,16 +129,27 @@ public class SpotifyService {
     @Transactional
     public void handleCallback(Long userId, String code) {
         User currentUser = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("user_not_found"));
 
-        SpotifyTokenResponse tokenResponse = apiClient.exchangeCodeForToken(code);
-        if (tokenResponse == null) {
-            throw new RuntimeException("Failed to exchange code for token");
+        log.info("Exchanging code for user: {}", userId);
+        SpotifyTokenResponse tokenResponse;
+        try {
+            tokenResponse = apiClient.exchangeCodeForToken(code);
+        } catch (Exception e) {
+            log.error("Token exchange failed for user {}: {}", userId, e.getMessage());
+            throw new RuntimeException("token_exchange_failed");
         }
 
+        if (tokenResponse == null || tokenResponse.getAccessToken() == null) {
+            log.error("Token response is null or missing access token for user: {}", userId);
+            throw new RuntimeException("token_exchange_failed");
+        }
+
+        log.info("Fetching user info from Spotify for user: {}", userId);
         SpotifyUserInfo userInfo = apiClient.getUserInfo(tokenResponse.getAccessToken());
         if (userInfo == null) {
-            throw new RuntimeException("Failed to get user info");
+            log.error("Failed to get Spotify user info for user: {}", userId);
+            throw new RuntimeException("spotify_api_error");
         }
 
         // Check if connection already exists
@@ -113,6 +168,7 @@ public class SpotifyService {
             existing.setPlatformUserId(userInfo.getId());
             existing.setScopes(tokenResponse.getScope());
             connectionRepository.save(existing);
+            log.info("Updated existing Spotify connection for user: {}", userId);
         } else {
             PlatformConnection connection = PlatformConnection.builder()
                     .user(currentUser)
@@ -124,6 +180,7 @@ public class SpotifyService {
                     .scopes(tokenResponse.getScope())
                     .build();
             connectionRepository.save(connection);
+            log.info("Created new Spotify connection for user: {}", userId);
         }
     }
 
