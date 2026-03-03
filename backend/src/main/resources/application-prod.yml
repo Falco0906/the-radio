@@ -27,3 +27,12 @@ logging:
     com.theradio: INFO
     org.springframework: WARN
 
+spring:
+  datasource:
+    hikari:
+      initialization-fail-timeout: 0
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
