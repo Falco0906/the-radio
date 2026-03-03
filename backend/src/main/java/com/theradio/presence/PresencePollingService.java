@@ -36,7 +36,7 @@ public class PresencePollingService {
     @Scheduled(fixedDelay = 7000)
     @Transactional(readOnly = true)
     public void pollSpotifyPresence() {
-        log.trace("Polling Spotify presence for all connected users");
+        log.info("Polling Spotify presence for all connected users");
         
         List<PlatformConnection> spotifyConnections = connectionRepository.findByPlatformWithUser(PlatformType.SPOTIFY);
         
