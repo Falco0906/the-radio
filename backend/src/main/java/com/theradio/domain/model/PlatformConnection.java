@@ -31,6 +31,9 @@ public class PlatformConnection {
     @Column(name = "token_expires_at")
     private OffsetDateTime tokenExpiresAt;
 
+    @Column(name = "scopes", columnDefinition = "TEXT")
+    private String scopes;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -41,7 +44,7 @@ public class PlatformConnection {
 
     public PlatformConnection(Long id, User user, PlatformType platform, String platformUserId, 
                              String accessToken, String refreshToken, OffsetDateTime tokenExpiresAt,
-                             OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+                             String scopes, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.user = user;
         this.platform = platform;
@@ -49,6 +52,7 @@ public class PlatformConnection {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.tokenExpiresAt = tokenExpiresAt;
+        this.scopes = scopes;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -65,6 +69,7 @@ public class PlatformConnection {
         private String accessToken;
         private String refreshToken;
         private OffsetDateTime tokenExpiresAt;
+        private String scopes;
         private OffsetDateTime createdAt = OffsetDateTime.now();
         private OffsetDateTime updatedAt = OffsetDateTime.now();
 
@@ -75,11 +80,12 @@ public class PlatformConnection {
         public PlatformConnectionBuilder accessToken(String accessToken) { this.accessToken = accessToken; return this; }
         public PlatformConnectionBuilder refreshToken(String refreshToken) { this.refreshToken = refreshToken; return this; }
         public PlatformConnectionBuilder tokenExpiresAt(OffsetDateTime tokenExpiresAt) { this.tokenExpiresAt = tokenExpiresAt; return this; }
+        public PlatformConnectionBuilder scopes(String scopes) { this.scopes = scopes; return this; }
         public PlatformConnectionBuilder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
         public PlatformConnectionBuilder updatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public PlatformConnection build() {
-            return new PlatformConnection(id, user, platform, platformUserId, accessToken, refreshToken, tokenExpiresAt, createdAt, updatedAt);
+            return new PlatformConnection(id, user, platform, platformUserId, accessToken, refreshToken, tokenExpiresAt, scopes, createdAt, updatedAt);
         }
     }
 
@@ -98,6 +104,8 @@ public class PlatformConnection {
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     public OffsetDateTime getTokenExpiresAt() { return tokenExpiresAt; }
     public void setTokenExpiresAt(OffsetDateTime tokenExpiresAt) { this.tokenExpiresAt = tokenExpiresAt; }
+    public String getScopes() { return scopes; }
+    public void setScopes(String scopes) { this.scopes = scopes; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }

@@ -13,6 +13,10 @@ import com.theradio.platforms.spotify.dto.SpotifyCurrentlyPlaying;
 import com.theradio.platforms.soundcloud.SoundCloudApiClient;
 import com.theradio.platforms.soundcloud.SoundCloudService;
 import com.theradio.websocket.PresenceWebSocketService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,7 @@ public class ListeningStateService {
     private final SoundCloudService soundCloudService;
     private final SoundCloudApiClient soundCloudApiClient;
     private final PresenceWebSocketService webSocketService;
+    private final ObjectMapper objectMapper;
 
     public ListeningStateService(ListeningStateRepository listeningStateRepository, 
                                  PlatformConnectionRepository connectionRepository,
@@ -42,7 +47,8 @@ public class ListeningStateService {
                                  SpotifyApiClient spotifyApiClient,
                                  SoundCloudService soundCloudService,
                                  SoundCloudApiClient soundCloudApiClient,
-                                 PresenceWebSocketService webSocketService) {
+                                 PresenceWebSocketService webSocketService,
+                                 ObjectMapper objectMapper) {
         this.listeningStateRepository = listeningStateRepository;
         this.connectionRepository = connectionRepository;
         this.userRepository = userRepository;
@@ -51,6 +57,7 @@ public class ListeningStateService {
         this.soundCloudService = soundCloudService;
         this.soundCloudApiClient = soundCloudApiClient;
         this.webSocketService = webSocketService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -86,29 +93,76 @@ public class ListeningStateService {
 
     @Transactional
     public void updateListeningState(User user, PlatformConnection connection) {
-        // Only update if user is live
-        if (!user.getIsLive()) {
-            // Clear listening state if user goes invisible
-            boolean hadState = listeningStateRepository.findByUser(user).isPresent();
-            listeningStateRepository.findByUser(user).ifPresent(listeningStateRepository::delete);
-            if (hadState) {
-                webSocketService.broadcastPresenceOffline(user);
-            }
-            return;
-        }
+        Long userId = user.getId();
+        log.info("--- DEEP DEBUG: Polling Spotify for user {} ({}) ---", user.getUsername(), userId);
+        
+        // 1. Log stored scopes
+        log.info("Scopes stored for user {}: {}", userId, connection.getScopes());
+
+        // 2. Log token expiry
+        log.info("Access token expires at: {}", connection.getTokenExpiresAt());
 
         try {
             String accessToken = spotifyService.getValidAccessToken(connection);
-            SpotifyCurrentlyPlaying currentlyPlaying = spotifyApiClient.getCurrentlyPlaying(accessToken);
+            
+            // 3. Device Activity Debugging
+            log.info("Calling Spotify playback-state API for device info...");
+            ResponseEntity<String> playbackResponse = spotifyApiClient.getPlaybackState(accessToken);
+            log.info("Playback state status: {}", playbackResponse.getStatusCode());
+            if (playbackResponse.getStatusCode().is2xxSuccessful() && playbackResponse.getBody() != null) {
+                try {
+                    JsonNode pbJson = objectMapper.readTree(playbackResponse.getBody());
+                    boolean active = pbJson.path("device").path("is_active").asBoolean();
+                    boolean isPlaying = pbJson.path("is_playing").asBoolean();
+                    String deviceName = pbJson.path("device").path("name").asText("Unknown");
+                    log.info("DEVICE DEBUG: Device active: {}, isPlaying: {}, deviceName: {}", 
+                            active, isPlaying, deviceName);
+                } catch (Exception e) {
+                    log.error("Failed to parse playback state JSON: {}", e.getMessage());
+                    log.info("Raw playback body: {}", playbackResponse.getBody());
+                }
+            } else if (playbackResponse.getStatusCode() == HttpStatus.NO_CONTENT) {
+                log.info("DEVICE DEBUG: Spotify returned 204 (No active device context)");
+            }
+
+            // 4. Currently Playing Call
+            log.info("Calling Spotify currently-playing API...");
+            ResponseEntity<String> response = spotifyApiClient.getCurrentlyPlaying(accessToken);
+            log.info("Spotify status for user {}: {}", userId, response.getStatusCode());
+
+            if (response.getStatusCode() == HttpStatus.NO_CONTENT) {
+                log.info("Spotify returned 204 (Nothing playing) for user {}", userId);
+                webSocketService.broadcastPresencePlaybackState(user, "NO_ACTIVE_PLAYBACK");
+                clearListeningState(user);
+                return;
+            }
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Spotify returned error {} for user {}: {}", 
+                        response.getStatusCode(), userId, response.getBody());
+                return;
+            }
+
+            String body = response.getBody();
+            if (body == null || body.isBlank()) {
+                log.error("Spotify returned empty body for user {} (status: {})", userId, response.getStatusCode());
+                return;
+            }
+
+            // 5. Parse and Handle Update
+            SpotifyCurrentlyPlaying currentlyPlaying;
+            try {
+                currentlyPlaying = objectMapper.readValue(body, SpotifyCurrentlyPlaying.class);
+            } catch (Exception e) {
+                log.error("JSON parsing failed for user {}: {}", userId, e.getMessage());
+                log.info("Raw JSON body: {}", body);
+                return;
+            }
 
             if (currentlyPlaying == null || currentlyPlaying.getItem() == null) {
-                // No track playing, clear state
-                Optional<ListeningState> existing = listeningStateRepository.findByUser(user);
-                if (existing.isPresent()) {
-                    log.info("User {} stopped playing. Clearing listening state.", user.getUsername());
-                    listeningStateRepository.delete(existing.get());
-                    webSocketService.broadcastPresenceOffline(user);
-                }
+                log.warn("Spotify response contains no track item for user {}", userId);
+                log.info("Raw JSON body: {}", body);
+                clearListeningState(user);
                 return;
             }
 
@@ -119,7 +173,6 @@ public class ListeningStateService {
 
             String albumArtUrl = null;
             if (track.getAlbum() != null && track.getAlbum().getImages() != null && track.getAlbum().getImages().length > 0) {
-                // Get smallest image (usually last in array)
                 albumArtUrl = track.getAlbum().getImages()[track.getAlbum().getImages().length - 1].getUrl();
             }
 
@@ -128,16 +181,14 @@ public class ListeningStateService {
             ListeningState state;
             if (existingState.isPresent()) {
                 state = existingState.get();
-                // Check if track changed to avoid redundant DB/WS updates
                 if (track.getId().equals(state.getTrackId()) && state.getIsPlaying() == currentlyPlaying.getIsPlaying()) {
-                    // Just update progress and timestamp
                     state.setProgressMs(currentlyPlaying.getProgressMs() != null ? currentlyPlaying.getProgressMs() : 0);
                     state.setUpdatedAt(java.time.OffsetDateTime.now());
                     listeningStateRepository.save(state);
                     return;
                 }
                 log.info("User {} track changed: {} - {}", user.getUsername(), track.getName(), artistName);
-                state.setPlatform(PlatformType.SPOTIFY); // Update platform in case they switched
+                state.setPlatform(PlatformType.SPOTIFY);
             } else {
                 log.info("User {} started playing: {} - {}", user.getUsername(), track.getName(), artistName);
                 state = ListeningState.builder()
@@ -156,13 +207,19 @@ public class ListeningStateService {
             state.setUpdatedAt(java.time.OffsetDateTime.now());
 
             ListeningState savedState = listeningStateRepository.save(state);
-            
-            // Broadcast update via WebSocket
             webSocketService.broadcastPresenceUpdate(user, savedState);
+
         } catch (Exception e) {
-            // Log error but don't crash
-            org.slf4j.LoggerFactory.getLogger(ListeningStateService.class).error("Error updating Spotify state for user {}: {}", user.getId(), e.getMessage());
+            log.error("Exception in updateListeningState for user {}: {}", userId, e.getMessage(), e);
         }
+    }
+
+    private void clearListeningState(User user) {
+        listeningStateRepository.findByUser(user).ifPresent(state -> {
+            log.info("Clearing listening state for user {}", user.getUsername());
+            listeningStateRepository.delete(state);
+            webSocketService.broadcastPresenceOffline(user);
+        });
     }
 
     @Transactional

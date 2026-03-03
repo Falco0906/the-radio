@@ -14,6 +14,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
@@ -129,29 +131,35 @@ public class SpotifyApiClient {
                 .block();
     }
 
-    public SpotifyCurrentlyPlaying getCurrentlyPlaying(String accessToken) {
+    public ResponseEntity<String> getCurrentlyPlaying(String accessToken) {
         WebClient webClient = webClientBuilder.baseUrl(apiBaseUrl).build();
 
         try {
             return webClient.get()
                     .uri("/me/player/currently-playing")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .exchangeToMono(response -> {
-                        if (response.statusCode().equals(org.springframework.http.HttpStatus.NO_CONTENT)) {
-                            log.info("Spotify API returned 204 No Content (No track is currently playing).");
-                            return Mono.empty();
-                        } else if (response.statusCode().is2xxSuccessful()) {
-                            log.debug("Spotify API returned 200 OK (Track is playing).");
-                            return response.bodyToMono(SpotifyCurrentlyPlaying.class);
-                        } else {
-                            log.warn("Spotify API returned error status: {}", response.statusCode());
-                            return Mono.empty();
-                        }
-                    })
+                    .retrieve()
+                    .toEntity(String.class)
                     .block();
         } catch (Exception e) {
             log.error("Error calling Spotify currently-playing API: {}", e.getMessage());
-            return null;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    public ResponseEntity<String> getPlaybackState(String accessToken) {
+        WebClient webClient = webClientBuilder.baseUrl(apiBaseUrl).build();
+
+        try {
+            return webClient.get()
+                    .uri("/me/player")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                    .retrieve()
+                    .toEntity(String.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Error calling Spotify playback-state API: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 }

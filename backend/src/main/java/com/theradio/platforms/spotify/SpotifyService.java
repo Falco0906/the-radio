@@ -111,6 +111,7 @@ public class SpotifyService {
             existing.setRefreshToken(tokenResponse.getRefreshToken());
             existing.setTokenExpiresAt(expiresAt);
             existing.setPlatformUserId(userInfo.getId());
+            existing.setScopes(tokenResponse.getScope());
             connectionRepository.save(existing);
         } else {
             PlatformConnection connection = PlatformConnection.builder()
@@ -120,6 +121,7 @@ public class SpotifyService {
                     .accessToken(tokenResponse.getAccessToken())
                     .refreshToken(tokenResponse.getRefreshToken())
                     .tokenExpiresAt(expiresAt)
+                    .scopes(tokenResponse.getScope())
                     .build();
             connectionRepository.save(connection);
         }
@@ -130,8 +132,10 @@ public class SpotifyService {
             throw new RuntimeException("No refresh token available");
         }
 
+        log.info("Refreshing Spotify access token for user {}", connection.getUser().getId());
         SpotifyTokenResponse tokenResponse = apiClient.refreshToken(connection.getRefreshToken());
         if (tokenResponse == null) {
+            log.error("Failed to refresh Spotify token for user {}", connection.getUser().getId());
             throw new RuntimeException("Failed to refresh token");
         }
 
@@ -143,18 +147,26 @@ public class SpotifyService {
         if (tokenResponse.getRefreshToken() != null) {
             connection.setRefreshToken(tokenResponse.getRefreshToken());
         }
+        if (tokenResponse.getScope() != null) {
+            connection.setScopes(tokenResponse.getScope());
+        }
         connection.setTokenExpiresAt(expiresAt);
         connectionRepository.save(connection);
 
+        log.info("Successfully refreshed Spotify token. New expiry: {}", expiresAt);
         return connection.getAccessToken();
     }
 
     public String getValidAccessToken(PlatformConnection connection) {
+        log.info("Checking Spotify token validity for user {}. Expires at: {}", 
+                connection.getUser().getId(), connection.getTokenExpiresAt());
+        
         if (connection.getTokenExpiresAt() == null || 
             connection.getTokenExpiresAt().isAfter(OffsetDateTime.now().plusMinutes(5))) {
             return connection.getAccessToken();
         }
 
+        log.info("Spotify token expired or expiring soon. Triggering refresh.");
         return refreshAccessToken(connection);
     }
 }

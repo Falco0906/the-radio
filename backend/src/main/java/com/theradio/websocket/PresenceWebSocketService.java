@@ -67,6 +67,38 @@ public class PresenceWebSocketService {
         );
     }
 
+    public void broadcastPresencePlaybackState(User user, String status) {
+        // Get all friends of this user
+        List<User> friends = friendRepository.findByUser(user).stream()
+                .map(f -> f.getFriend())
+                .toList();
+
+        PresenceUpdateMessage message = PresenceUpdateMessage.builder()
+                .type("PLAYBACK_STATE_UPDATE")
+                .userId(user.getId())
+                .username(user.getUsername())
+                .displayName(user.getDisplayName())
+                .platform("SPOTIFY") // Defaulting to Spotify for this debug mode
+                .trackName(status) // Reuse trackName to carry the status message for visibility
+                .isPlaying(false)
+                .build();
+
+        for (User friend : friends) {
+            messagingTemplate.convertAndSendToUser(
+                    friend.getUsername(),
+                    "/queue/presence",
+                    message
+            );
+        }
+
+        // Also send to the user themselves
+        messagingTemplate.convertAndSendToUser(
+                user.getUsername(),
+                "/queue/presence",
+                message
+        );
+    }
+
     public void broadcastPresenceOffline(User user) {
         // Get all friends of this user
         List<User> friends = friendRepository.findByUser(user).stream()
