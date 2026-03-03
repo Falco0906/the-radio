@@ -44,7 +44,7 @@ export const usePresence = () => {
     const client = new Client({
       webSocketFactory: () => new SockJS(API_BASE + '/ws'),
       connectHeaders: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${localStorage.getItem('token') || token}`
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,

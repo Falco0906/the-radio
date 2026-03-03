@@ -12,15 +12,9 @@ const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    // Don't add Authorization header for public endpoints
-    const publicEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/logout']
-    const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint))
-
-    if (!isPublicEndpoint) {
-      const token = localStorage.getItem('token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },

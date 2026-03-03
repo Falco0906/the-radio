@@ -57,15 +57,17 @@ const ConnectPlatform = () => {
     try {
       setMessage(null)
       const response = await apiClient.post('/api/platforms/spotify/connect')
-      if (response.data && response.data.authUrl) {
-        window.location.href = response.data.authUrl
+
+      const { authorizationUrl } = response.data
+
+      if (authorizationUrl) {
+        window.location.href = authorizationUrl
       } else {
-        setMessage('Failed to get Spotify authorization URL')
-        setMessageType('error')
+        throw new Error('No authorization URL returned from backend')
       }
     } catch (error) {
-      console.error('Failed to initiate Spotify connection:', error)
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to initiate Spotify connection'
+      console.error('Spotify connection failed:', error)
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to get Spotify authorization URL'
       setMessage(errorMsg)
       setMessageType('error')
     }
