@@ -37,9 +37,12 @@ export const usePresence = () => {
   }, [token])
 
   useEffect(() => {
-    if (!token) return
+    if (!token || !user?.id) {
+      console.log('User or token not ready for WebSocket setup', { token: !!token, userId: user?.id });
+      return;
+    }
 
-    fetchCurrentPresence()
+    fetchCurrentPresence();
 
     const client = new Client({
       webSocketFactory: () => new SockJS(API_BASE + '/ws'),
@@ -49,26 +52,42 @@ export const usePresence = () => {
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
+      debug: (str) => {
+        console.log('STOMP Debug:', str);
+      },
       onConnect: () => {
-        client.subscribe(`/user/queue/presence`, (message) => {
-          const data = JSON.parse(message.body)
-          handlePresenceUpdate(data)
-        })
+        const userId = user.id;
+        console.log("WS connected. current user ID:", userId);
+
+        const topic = `/topic/presence/${userId}`;
+        console.log("Subscribing to dynamic topic:", topic);
+        client.subscribe(topic, (message) => {
+          console.log("WS presence update (dynamic):", message.body);
+          const data = JSON.parse(message.body);
+          handlePresenceUpdate(data);
+        });
+
+        // TEST TOPIC: Hardcoded subscription to rule out ID mismatches
+        console.log("Subscribing to: /topic/presence-test");
+        client.subscribe("/topic/presence-test", (message) => {
+          console.log("WS presence update (test-topic):", message.body);
+        });
       },
       onStompError: (frame) => {
-        console.error('STOMP error:', frame)
+        console.error('STOMP error:', frame);
       }
-    })
+    });
 
-    clientRef.current = client
-    client.activate()
+    clientRef.current = client;
+    client.activate();
 
     return () => {
       if (clientRef.current) {
-        clientRef.current.deactivate()
+        console.log('Deactivating STOMP client');
+        clientRef.current.deactivate();
       }
-    }
-  }, [token, fetchCurrentPresence])
+    };
+  }, [token, user?.id, fetchCurrentPresence])
 
   const handlePresenceUpdate = (data) => {
     setPresenceMap((prev) => {
