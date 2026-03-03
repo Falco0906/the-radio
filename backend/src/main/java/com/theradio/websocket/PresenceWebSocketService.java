@@ -50,11 +50,13 @@ public class PresenceWebSocketService {
                 .build();
 
         // Broadcast presence update to specific user topic
-        messagingTemplate.convertAndSend(
-                "/topic/presence/" + user.getId(),
-                message
-        );
-        log.info("Broadcasted presence update to /topic/presence/{}", user.getId());
+        String topic = "/topic/presence/" + user.getId();
+        messagingTemplate.convertAndSend(topic, message);
+        log.info("Sending WS message to: {}", topic);
+
+        // TEST TOPIC: Hardcoded for global debugging
+        messagingTemplate.convertAndSend("/topic/presence-test", message);
+        log.info("Sending WS message to: /topic/presence-test");
     }
 
     public void broadcastPresencePlaybackState(User user, String status) {
