@@ -33,10 +33,11 @@ public class PresencePollingService {
      * We only poll users who have a Spotify connection.
      */
     @Scheduled(fixedDelay = 7000)
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public void pollSpotifyPresence() {
         log.trace("Polling Spotify presence for all connected users");
         
-        List<PlatformConnection> spotifyConnections = connectionRepository.findByPlatform(PlatformType.SPOTIFY);
+        List<PlatformConnection> spotifyConnections = connectionRepository.findByPlatformWithUser(PlatformType.SPOTIFY);
         
         for (PlatformConnection connection : spotifyConnections) {
             User user = connection.getUser();
