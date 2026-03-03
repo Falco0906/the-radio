@@ -126,33 +126,22 @@ public class SpotifyService {
         return connect(state);
     }
 
+    public SpotifyTokenResponse exchangeCodeForToken(String code) {
+        log.info("Delegating to API client for Spotify token exchange");
+        return apiClient.exchangeCodeForToken(code);
+    }
+
+    public SpotifyUserInfo fetchUserInfo(String accessToken) {
+        log.info("Delegating to API client to fetch Spotify user info");
+        return apiClient.getUserInfo(accessToken);
+    }
+
     @Transactional
-    public void handleCallback(Long userId, String code) {
+    public void saveConnection(Long userId, SpotifyTokenResponse tokenResponse, SpotifyUserInfo userInfo) {
+        log.info("Starting database save for Spotify connection. User={}, SpotifyId={}", userId, userInfo.getId());
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("user_not_found"));
 
-        log.info("Exchanging code for user: {}", userId);
-        SpotifyTokenResponse tokenResponse;
-        try {
-            tokenResponse = apiClient.exchangeCodeForToken(code);
-        } catch (Exception e) {
-            log.error("Token exchange failed for user {}: {}", userId, e.getMessage());
-            throw new RuntimeException("token_exchange_failed");
-        }
-
-        if (tokenResponse == null || tokenResponse.getAccessToken() == null) {
-            log.error("Token response is null or missing access token for user: {}", userId);
-            throw new RuntimeException("token_exchange_failed");
-        }
-
-        log.info("Fetching user info from Spotify for user: {}", userId);
-        SpotifyUserInfo userInfo = apiClient.getUserInfo(tokenResponse.getAccessToken());
-        if (userInfo == null) {
-            log.error("Failed to get Spotify user info for user: {}", userId);
-            throw new RuntimeException("spotify_api_error");
-        }
-
-        // Check if connection already exists
         PlatformConnection existing = connectionRepository
                 .findByUserAndPlatform(currentUser, PlatformType.SPOTIFY)
                 .orElse(null);

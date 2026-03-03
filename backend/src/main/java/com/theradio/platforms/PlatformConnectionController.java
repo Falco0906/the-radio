@@ -195,26 +195,67 @@ public class PlatformConnectionController {
         try {
             userId = spotifyService.validateState(state);
         } catch (Exception e) {
-            log.warn("Spotify state validation failed: {}", e.getMessage());
+            log.warn("Spotify state validation failed: {}", e.getMessage(), e);
             String errorType = e.getMessage().contains("expired") ? "state_expired" : "state_mismatch";
             return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(frontendUrl + "/connect-platform?error=" + errorType))
                 .build();
         }
 
+        // ---------- Step 1: Token Exchange ----------
+        com.theradio.platforms.spotify.dto.SpotifyTokenResponse tokenResponse;
         try {
-            spotifyService.handleCallback(userId, code);
-            log.info("Spotify connected successfully for userId={}", userId);
-            return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/connect-platform?connected=spotify"))
-                .build();
+            log.info("Starting token exchange for user {}", userId);
+            tokenResponse = spotifyService.exchangeCodeForToken(code);
+            if (tokenResponse == null || tokenResponse.getAccessToken() == null) {
+                log.error("Spotify token response was null or missing access token for user {}", userId);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontendUrl + "/connect-platform?error=token_exchange_failed"))
+                    .build();
+            }
+            log.info("Successfully exchanged code for token for user {}", userId);
         } catch (Exception e) {
-            log.error("Spotify token exchange failed for userId={}: {}", userId, e.getMessage());
-            String errorParam = e.getMessage(); // handleCallback throws specific keys
+            log.error("Spotify token exchange failed for user {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/connect-platform?error=" + errorParam))
+                .location(URI.create(frontendUrl + "/connect-platform?error=token_exchange_failed"))
                 .build();
         }
+
+        // ---------- Step 2: Fetch User Info ----------
+        com.theradio.platforms.spotify.dto.SpotifyUserInfo userInfo;
+        try {
+            log.info("Fetching Spotify user info for user {}", userId);
+            userInfo = spotifyService.fetchUserInfo(tokenResponse.getAccessToken());
+            if (userInfo == null) {
+                log.error("Spotify user info response was null for user {}", userId);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(frontendUrl + "/connect-platform?error=user_info_failed"))
+                    .build();
+            }
+            log.info("Successfully fetched Spotify user info for user {}", userId);
+        } catch (Exception e) {
+            log.error("Spotify user info fetch failed for user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/connect-platform?error=user_info_failed"))
+                .build();
+        }
+
+        // ---------- Step 3: Save Connection ----------
+        try {
+            log.info("Saving Spotify connection to database for user {}", userId);
+            spotifyService.saveConnection(userId, tokenResponse, userInfo);
+            log.info("Successfully saved Spotify connection for user {}", userId);
+        } catch (Exception e) {
+            log.error("Database save failed for Spotify connection for user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/connect-platform?error=db_save_failed"))
+                .build();
+        }
+
+        log.info("Spotify OAuth flow completed successfully for user {}", userId);
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(frontendUrl + "/connect-platform?connected=spotify"))
+            .build();
     }
 
     @GetMapping("/soundcloud/me")
