@@ -1,10 +1,12 @@
 package com.theradio.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "listening_state")
+@JsonIgnoreProperties({"user"})
 public class ListeningState {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

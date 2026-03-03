@@ -32,25 +32,35 @@ public class PresenceWebSocketService {
             return;
         }
 
-        // Create presence update message
+        Long userId = user.getId();
+        
+        // Step 1 - Fetch fresh from DB to ensure payload integrity
+        ListeningState updated = listeningStateRepository.findByUserId(userId)
+                .orElse(state); // Fallback to passed state if not found
+
+        log.info("Broadcasting presence payload: isPlaying={}, track={}",
+                updated.getIsPlaying(),
+                updated.getTrackName());
+
+        // Create presence update message from fresh data
         PresenceUpdateMessage message = PresenceUpdateMessage.builder()
                 .type("PRESENCE_UPDATE")
-                .userId(user.getId())
+                .userId(userId)
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
-                .platform(state.getPlatform().name())
-                .trackId(state.getTrackId())
-                .trackName(state.getTrackName())
-                .artist(state.getArtist())
-                .albumArtUrl(state.getAlbumArtUrl())
-                .progressMs(state.getProgressMs())
-                .durationMs(state.getDurationMs())
-                .isPlaying(state.getIsPlaying())
-                .updatedAt(state.getUpdatedAt())
+                .platform(updated.getPlatform().name())
+                .trackId(updated.getTrackId())
+                .trackName(updated.getTrackName())
+                .artist(updated.getArtist())
+                .albumArtUrl(updated.getAlbumArtUrl())
+                .progressMs(updated.getProgressMs())
+                .durationMs(updated.getDurationMs())
+                .isPlaying(updated.getIsPlaying())
+                .updatedAt(updated.getUpdatedAt())
                 .build();
 
         // Broadcast presence update to specific user topic
-        String topic = "/topic/presence/" + user.getId();
+        String topic = "/topic/presence/" + userId;
         messagingTemplate.convertAndSend(topic, message);
         log.info("Sending WS message to: {}", topic);
 
