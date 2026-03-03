@@ -136,11 +136,21 @@ public class SpotifyApiClient {
             return webClient.get()
                     .uri("/me/player/currently-playing")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .retrieve()
-                    .bodyToMono(SpotifyCurrentlyPlaying.class)
+                    .exchangeToMono(response -> {
+                        if (response.statusCode().equals(org.springframework.http.HttpStatus.NO_CONTENT)) {
+                            log.info("Spotify API returned 204 No Content (No track is currently playing).");
+                            return Mono.empty();
+                        } else if (response.statusCode().is2xxSuccessful()) {
+                            log.debug("Spotify API returned 200 OK (Track is playing).");
+                            return response.bodyToMono(SpotifyCurrentlyPlaying.class);
+                        } else {
+                            log.warn("Spotify API returned error status: {}", response.statusCode());
+                            return Mono.empty();
+                        }
+                    })
                     .block();
         } catch (Exception e) {
-            log.debug("No currently playing track or error: {}", e.getMessage());
+            log.error("Error calling Spotify currently-playing API: {}", e.getMessage());
             return null;
         }
     }

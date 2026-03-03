@@ -6,12 +6,15 @@ import com.theradio.domain.model.PlatformType;
 import com.theradio.domain.model.User;
 import com.theradio.domain.repository.ListeningStateRepository;
 import com.theradio.domain.repository.PlatformConnectionRepository;
+import com.theradio.domain.repository.UserRepository;
 import com.theradio.platforms.spotify.SpotifyApiClient;
 import com.theradio.platforms.spotify.SpotifyService;
 import com.theradio.platforms.spotify.dto.SpotifyCurrentlyPlaying;
 import com.theradio.platforms.soundcloud.SoundCloudApiClient;
 import com.theradio.platforms.soundcloud.SoundCloudService;
 import com.theradio.websocket.PresenceWebSocketService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +24,11 @@ import java.util.Optional;
 
 @Service
 public class ListeningStateService {
+    private static final Logger log = LoggerFactory.getLogger(ListeningStateService.class);
+
     private final ListeningStateRepository listeningStateRepository;
     private final PlatformConnectionRepository connectionRepository;
+    private final UserRepository userRepository;
     private final SpotifyService spotifyService;
     private final SpotifyApiClient spotifyApiClient;
     private final SoundCloudService soundCloudService;
@@ -31,6 +37,7 @@ public class ListeningStateService {
 
     public ListeningStateService(ListeningStateRepository listeningStateRepository, 
                                  PlatformConnectionRepository connectionRepository,
+                                 UserRepository userRepository,
                                  SpotifyService spotifyService, 
                                  SpotifyApiClient spotifyApiClient,
                                  SoundCloudService soundCloudService,
@@ -38,6 +45,7 @@ public class ListeningStateService {
                                  PresenceWebSocketService webSocketService) {
         this.listeningStateRepository = listeningStateRepository;
         this.connectionRepository = connectionRepository;
+        this.userRepository = userRepository;
         this.spotifyService = spotifyService;
         this.spotifyApiClient = spotifyApiClient;
         this.soundCloudService = soundCloudService;
@@ -67,6 +75,16 @@ public class ListeningStateService {
     }
 
     @Transactional
+    public void updateSpotifyPresence(Long userId, Long connectionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        PlatformConnection connection = connectionRepository.findById(connectionId)
+                .orElseThrow(() -> new RuntimeException("Connection not found: " + connectionId));
+
+        updateListeningState(user, connection);
+    }
+
+    @Transactional
     public void updateListeningState(User user, PlatformConnection connection) {
         // Only update if user is live
         if (!user.getIsLive()) {
@@ -85,7 +103,12 @@ public class ListeningStateService {
 
             if (currentlyPlaying == null || currentlyPlaying.getItem() == null) {
                 // No track playing, clear state
-                listeningStateRepository.findByUser(user).ifPresent(listeningStateRepository::delete);
+                Optional<ListeningState> existing = listeningStateRepository.findByUser(user);
+                if (existing.isPresent()) {
+                    log.info("User {} stopped playing. Clearing listening state.", user.getUsername());
+                    listeningStateRepository.delete(existing.get());
+                    webSocketService.broadcastPresenceOffline(user);
+                }
                 return;
             }
 
@@ -105,8 +128,18 @@ public class ListeningStateService {
             ListeningState state;
             if (existingState.isPresent()) {
                 state = existingState.get();
+                // Check if track changed to avoid redundant DB/WS updates
+                if (track.getId().equals(state.getTrackId()) && state.getIsPlaying() == currentlyPlaying.getIsPlaying()) {
+                    // Just update progress and timestamp
+                    state.setProgressMs(currentlyPlaying.getProgressMs() != null ? currentlyPlaying.getProgressMs() : 0);
+                    state.setUpdatedAt(java.time.OffsetDateTime.now());
+                    listeningStateRepository.save(state);
+                    return;
+                }
+                log.info("User {} track changed: {} - {}", user.getUsername(), track.getName(), artistName);
                 state.setPlatform(PlatformType.SPOTIFY); // Update platform in case they switched
             } else {
+                log.info("User {} started playing: {} - {}", user.getUsername(), track.getName(), artistName);
                 state = ListeningState.builder()
                         .user(user)
                         .platform(PlatformType.SPOTIFY)

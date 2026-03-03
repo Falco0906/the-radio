@@ -34,19 +34,18 @@ public class PresencePollingService {
      * We only poll users who have a Spotify connection.
      */
     @Scheduled(fixedDelay = 7000)
-    @Transactional(readOnly = true)
     public void pollSpotifyPresence() {
         log.info("Polling Spotify presence for all connected users");
         
         List<PlatformConnection> spotifyConnections = connectionRepository.findByPlatformWithUser(PlatformType.SPOTIFY);
         
         for (PlatformConnection connection : spotifyConnections) {
-            User user = connection.getUser();
+            Long userId = connection.getUser().getId();
+            Long connectionId = connection.getId();
             try {
-                // This will use the refresh token if the access token is expired
-                listeningStateService.updateListeningState(user, connection);
+                listeningStateService.updateSpotifyPresence(userId, connectionId);
             } catch (Exception e) {
-                log.error("Failed to poll Spotify presence for user {}: {}", user.getId(), e.getMessage());
+                log.error("Failed to poll Spotify presence for userId {}: {}", userId, e.getMessage());
             }
         }
     }
