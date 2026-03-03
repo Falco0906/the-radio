@@ -76,16 +76,8 @@ export const PresenceProvider = ({ children }) => {
             },
             onConnect: () => {
                 setIsConnected(true);
-                const userId = user.id;
-                const topic = `/topic/presence/${userId}`;
-
-                client.subscribe(topic, (message) => {
-                    const data = JSON.parse(message.body);
-                    handlePresenceUpdate(data);
-                });
-
-                // Test topic for global debugging if needed
-                client.subscribe("/topic/presence-test", (message) => {
+                // Subscribe to private user destination
+                client.subscribe('/user/queue/presence', (message) => {
                     const data = JSON.parse(message.body);
                     handlePresenceUpdate(data);
                 });
