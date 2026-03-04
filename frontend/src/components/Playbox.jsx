@@ -2,7 +2,9 @@ import React from 'react';
 import './Playbox.css';
 
 const Playbox = ({ presence, title }) => {
-    if (!presence || (!presence.trackName && !presence.isPlaying)) {
+    const noPlayback = !presence || (!presence.trackName && !presence.isPlaying) || presence.trackName === 'NO_ACTIVE_PLAYBACK';
+
+    if (noPlayback) {
         return (
             <div className="playbox empty">
                 {title && <h3 className="playbox-title">{title}</h3>}
