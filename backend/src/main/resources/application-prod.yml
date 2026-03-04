@@ -1,11 +1,21 @@
 spring:
+  main:
+    lazy-initialization: true
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:}
-  
+    hikari:
+      initialization-fail-timeout: 0
+
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
 
 server:
   port: ${PORT:8080}
@@ -14,7 +24,7 @@ app:
   jwt:
     secret: ${JWT_SECRET}
     expiration: 86400000
-  
+
   spotify:
     api-base-url: https://api.spotify.com/v1
     polling-interval-seconds: 5
@@ -26,13 +36,3 @@ logging:
   level:
     com.theradio: INFO
     org.springframework: WARN
-
-spring:
-  datasource:
-    hikari:
-      initialization-fail-timeout: 0
-  jpa:
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
