@@ -13,6 +13,11 @@ const Dashboard = () => {
   const { presenceMap } = usePresence()
 
   useEffect(() => {
+    console.log('[Dashboard] presenceMap updated:', presenceMap)
+    console.log('[Dashboard] My user ID:', user?.id, '| My presence:', presenceMap[user?.id])
+  }, [presenceMap, user?.id])
+
+  useEffect(() => {
     fetchFriends()
   }, [])
 

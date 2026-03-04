@@ -75,18 +75,38 @@ export const PresenceProvider = ({ children }) => {
                 // console.log('STOMP Debug:', str);
             },
             onConnect: () => {
+                console.log('[PresenceContext] WebSocket connected successfully');
                 setIsConnected(true);
+
                 // Subscribe to private user destination
                 client.subscribe('/user/queue/presence', (message) => {
-                    const data = JSON.parse(message.body);
-                    handlePresenceUpdate(data);
+                    console.log('[PresenceContext] Presence WS message:', message.body);
+                    try {
+                        const data = JSON.parse(message.body);
+                        console.log('[PresenceContext] Parsed presence payload:', data);
+                        handlePresenceUpdate(data);
+                    } catch (err) {
+                        console.error('[PresenceContext] Failed to parse presence message:', err);
+                    }
+                });
+
+                // Also subscribe to topic broadcasts for friend presence updates
+                client.subscribe('/topic/presence', (message) => {
+                    console.log('[PresenceContext] Topic presence message:', message.body);
+                    try {
+                        const data = JSON.parse(message.body);
+                        handlePresenceUpdate(data);
+                    } catch (err) {
+                        console.error('[PresenceContext] Failed to parse topic message:', err);
+                    }
                 });
             },
             onDisconnect: () => {
+                console.log('[PresenceContext] WebSocket disconnected');
                 setIsConnected(false);
             },
             onStompError: (frame) => {
-                console.error('STOMP error:', frame);
+                console.error('[PresenceContext] STOMP error:', frame);
                 setIsConnected(false);
             }
         });
