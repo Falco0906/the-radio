@@ -113,15 +113,55 @@ public class FriendsService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void addFriend(Long targetUserId) {
+        User currentUser = authService.getCurrentUser();
+
+        if (currentUser.getId().equals(targetUserId)) {
+            throw new RuntimeException("Cannot add yourself as a friend");
+        }
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (areFriends(currentUser, targetUser)) {
+            return; // Already friends, no-op
+        }
+
+        // Create bidirectional friendship
+        Friend friendship1 = Friend.builder()
+                .user(currentUser)
+                .friend(targetUser)
+                .build();
+        Friend friendship2 = Friend.builder()
+                .user(targetUser)
+                .friend(currentUser)
+                .build();
+
+        friendRepository.save(friendship1);
+        friendRepository.save(friendship2);
+    }
+
+    public boolean areFriends(User a, User b) {
+        return friendRepository.existsByUserAndFriend(a, b) ||
+               friendRepository.existsByUserAndFriend(b, a);
+    }
+
     public List<UserDto> searchUsers(String query) {
         User currentUser = authService.getCurrentUser();
         List<User> users = userRepository.searchUsers(query, currentUser.getId());
+        List<Friend> myFriends = friendRepository.findByUser(currentUser);
+        var friendIds = myFriends.stream()
+                .map(f -> f.getFriend().getId())
+                .collect(Collectors.toSet());
+
         return users.stream()
                 .map(user -> UserDto.builder()
                         .id(user.getId())
                         .username(user.getUsername())
                         .displayName(user.getDisplayName())
                         .isLive(user.getIsLive())
+                        .isFriend(friendIds.contains(user.getId()))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -294,6 +334,7 @@ public class FriendsService {
         private String username;
         private String displayName;
         private Boolean isLive;
+        private Boolean isFriend;
 
         public static UserDtoBuilder builder() {
             return new UserDtoBuilder();
@@ -304,11 +345,13 @@ public class FriendsService {
             private String username;
             private String displayName;
             private Boolean isLive;
+            private Boolean isFriend;
 
             public UserDtoBuilder id(Long id) { this.id = id; return this; }
             public UserDtoBuilder username(String username) { this.username = username; return this; }
             public UserDtoBuilder displayName(String displayName) { this.displayName = displayName; return this; }
             public UserDtoBuilder isLive(Boolean isLive) { this.isLive = isLive; return this; }
+            public UserDtoBuilder isFriend(Boolean isFriend) { this.isFriend = isFriend; return this; }
 
             public UserDto build() {
                 UserDto dto = new UserDto();
@@ -316,6 +359,7 @@ public class FriendsService {
                 dto.username = username;
                 dto.displayName = displayName;
                 dto.isLive = isLive;
+                dto.isFriend = isFriend;
                 return dto;
             }
         }
@@ -324,6 +368,7 @@ public class FriendsService {
         public String getUsername() { return username; }
         public String getDisplayName() { return displayName; }
         public Boolean getIsLive() { return isLive; }
+        public Boolean getIsFriend() { return isFriend; }
     }
 }
 

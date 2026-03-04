@@ -52,6 +52,16 @@ public class FriendsController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/add/{userId}")
+    public ResponseEntity<Map<String, String>> addFriend(@PathVariable Long userId) {
+        try {
+            friendsService.addFriend(userId);
+            return ResponseEntity.ok(Map.of("status", "added"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{friendId}")
     public ResponseEntity<Void> removeFriend(@PathVariable Long friendId) {
         friendsService.removeFriend(friendId);

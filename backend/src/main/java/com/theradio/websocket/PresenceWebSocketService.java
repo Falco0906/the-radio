@@ -72,6 +72,23 @@ public class PresenceWebSocketService {
                 message
         );
         log.info("Sent private WS presence update to user: {} at /user/queue/presence", user.getEmail());
+
+        // Broadcast to all friends
+        List<User> friends = friendRepository.findByUser(user).stream()
+                .map(f -> f.getFriend())
+                .toList();
+
+        for (User friend : friends) {
+            if (!friend.getId().equals(userId)) {
+                messagingTemplate.convertAndSendToUser(
+                        friend.getEmail(),
+                        "/queue/presence",
+                        message
+                );
+                log.info("Broadcasting presence of userId {} to friend {} ({})",
+                        userId, friend.getId(), friend.getEmail());
+            }
+        }
     }
 
     public void broadcastPresenceUpdate(User user, ListeningState state) {

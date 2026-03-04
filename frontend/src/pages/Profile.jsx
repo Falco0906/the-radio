@@ -10,6 +10,7 @@ const Profile = () => {
   const [friendRequests, setFriendRequests] = useState({ sent: [], received: [] })
   const [searchUsername, setSearchUsername] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [addedIds, setAddedIds] = useState(new Set())
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -32,6 +33,17 @@ const Profile = () => {
       setFriendRequests(response.data)
     } catch (error) {
       console.error('Failed to fetch friend requests:', error)
+    }
+  }
+
+  const addFriend = async (userId) => {
+    try {
+      await apiClient.post(`/api/friends/add/${userId}`)
+      setAddedIds(prev => new Set([...prev, userId]))
+      fetchFriends()
+    } catch (error) {
+      console.error('Failed to add friend:', error)
+      alert(error.response?.data?.error || 'Failed to add friend')
     }
   }
 
@@ -119,20 +131,29 @@ const Profile = () => {
 
           {searchResults.length > 0 && (
             <div className="search-results mt-2">
-              {searchResults.map((result) => (
-                <div key={result.id} className="friend-request-item">
-                  <div>
-                    <strong>{result.displayName || result.username}</strong>
-                    <span className="text-muted"> @{result.username}</span>
+              {searchResults.map((result) => {
+                const alreadyFriend = result.isFriend || addedIds.has(result.id)
+                return (
+                  <div key={result.id} className="friend-request-item">
+                    <div>
+                      <strong>{result.displayName || result.username}</strong>
+                      <span className="text-muted"> @{result.username}</span>
+                    </div>
+                    {alreadyFriend ? (
+                      <button className="btn-sm" disabled>
+                        Friends ✓
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-sm"
+                        onClick={() => addFriend(result.id)}
+                      >
+                        Add Friend
+                      </button>
+                    )}
                   </div>
-                  <button
-                    className="btn-sm"
-                    onClick={() => sendFriendRequest(result.id)}
-                  >
-                    Add Friend
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
