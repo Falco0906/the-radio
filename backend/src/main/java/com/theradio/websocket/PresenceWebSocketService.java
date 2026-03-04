@@ -67,11 +67,11 @@ public class PresenceWebSocketService {
 
         // Send to the user themselves via a private queue
         messagingTemplate.convertAndSendToUser(
-                user.getUsername(),
+                user.getEmail(),
                 "/queue/presence",
                 message
         );
-        log.info("Sent private WS presence update to user: {} at /user/queue/presence", user.getUsername());
+        log.info("Sent private WS presence update to user: {} at /user/queue/presence", user.getEmail());
     }
 
     public void broadcastPresenceUpdate(User user, ListeningState state) {
@@ -97,7 +97,7 @@ public class PresenceWebSocketService {
 
         for (User friend : friends) {
             messagingTemplate.convertAndSendToUser(
-                    friend.getUsername(),
+                    friend.getEmail(),
                     "/queue/presence",
                     message
             );
@@ -105,7 +105,7 @@ public class PresenceWebSocketService {
 
         // Also send to the user themselves
         messagingTemplate.convertAndSendToUser(
-                user.getUsername(),
+                user.getEmail(),
                 "/queue/presence",
                 message
         );
@@ -125,7 +125,7 @@ public class PresenceWebSocketService {
 
         for (User friend : friends) {
             messagingTemplate.convertAndSendToUser(
-                    friend.getUsername(),
+                    friend.getEmail(),
                     "/queue/presence",
                     message
             );
@@ -147,7 +147,7 @@ public class PresenceWebSocketService {
 
         for (User friend : friends) {
             messagingTemplate.convertAndSendToUser(
-                    friend.getUsername(),
+                    friend.getEmail(),
                     "/queue/presence",
                     message
             );
