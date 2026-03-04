@@ -1,0 +1,313 @@
+.friends-page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.friends-page h1 {
+    margin-bottom: 1.5rem;
+}
+
+/* Tabs */
+.friends-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #333;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 0.95rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+    color: #fff;
+}
+
+.tab-btn.active {
+    color: #1db954;
+    border-bottom-color: #1db954;
+}
+
+.badge {
+    background: #e53e3e;
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    margin-left: 0.4rem;
+}
+
+/* Tab content */
+.tab-content {
+    min-height: 200px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+}
+
+.empty-state button {
+    margin-top: 1rem;
+}
+
+/* Friends grid */
+.friends-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.friend-card-full {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #333;
+}
+
+.friend-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.friend-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot.online {
+    background: #1db954;
+    box-shadow: 0 0 6px #1db954;
+}
+
+.status-dot.offline {
+    background: #555;
+}
+
+.friend-name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.friend-username {
+    font-size: 0.85rem;
+}
+
+.btn-remove {
+    padding: 0.3rem 0.8rem;
+    background: transparent;
+    border: 1px solid #555;
+    color: #888;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-remove:hover {
+    border-color: #e53e3e;
+    color: #e53e3e;
+}
+
+/* Now playing */
+.friend-now-playing {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #2a2a3e;
+}
+
+.mini-album-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.now-playing-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.np-track {
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.np-artist {
+    font-size: 0.8rem;
+}
+
+.waveform.small .waveform-bar {
+    width: 3px;
+    height: 12px;
+}
+
+/* Requests */
+.requests-section {
+    margin-bottom: 1.5rem;
+}
+
+.requests-section h3 {
+    margin-bottom: 0.75rem;
+    color: #aaa;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.request-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #1a1a2e;
+    border-radius: 8px;
+    border: 1px solid #333;
+    margin-bottom: 0.5rem;
+}
+
+.request-info {
+    flex: 1;
+}
+
+.request-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-accept {
+    padding: 0.35rem 1rem;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-accept:hover {
+    background: #1ed760;
+}
+
+.btn-reject {
+    padding: 0.35rem 1rem;
+    background: transparent;
+    color: #888;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-reject:hover {
+    border-color: #e53e3e;
+    color: #e53e3e;
+}
+
+.pending-badge {
+    color: #888;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Search */
+.search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.search-bar input::placeholder {
+    color: #666;
+}
+
+.search-bar button {
+    padding: 0.6rem 1.25rem;
+}
+
+.search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-result-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #1a1a2e;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.search-result-info {
+    flex: 1;
+}
+
+.btn-add {
+    padding: 0.35rem 1rem;
+    background: #1db954;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-add:hover {
+    background: #1ed760;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.friends {
+    background: rgba(29, 185, 84, 0.15);
+    color: #1db954;
+}
+
+.status-badge.pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}

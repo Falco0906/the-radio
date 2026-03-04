@@ -17,6 +17,7 @@ const Layout = ({ children }) => {
         <div className="app-title">The Radio</div>
         <nav className="app-nav">
           <Link to="/dashboard">Dashboard</Link>
+          <Link to="/friends">Friends</Link>
           <Link to="/profile">Profile</Link>
           <Link to="/connect-platform">Platforms</Link>
           {user && (

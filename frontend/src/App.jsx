@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import ConnectPlatform from './pages/ConnectPlatform'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import Friends from './pages/Friends'
 import PrivateRoute from './components/PrivateRoute'
 import SpotifyPresenceBar from './components/SpotifyPresenceBar'
 import './App.css'
@@ -29,6 +30,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/friends"
+              element={
+                <PrivateRoute>
+                  <Friends />
                 </PrivateRoute>
               }
             />

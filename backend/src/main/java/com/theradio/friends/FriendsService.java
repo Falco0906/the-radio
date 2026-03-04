@@ -96,6 +96,7 @@ public class FriendsService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<FriendDto> getFriends() {
         User currentUser = authService.getCurrentUser();
         List<Friend> friendships = friendRepository.findByUser(currentUser);
@@ -179,6 +180,7 @@ public class FriendsService {
         friendRepository.deleteByUserAndFriend(friend, currentUser);
     }
 
+    @Transactional(readOnly = true)
     public FriendRequestsDto getFriendRequests() {
         User currentUser = authService.getCurrentUser();
         
