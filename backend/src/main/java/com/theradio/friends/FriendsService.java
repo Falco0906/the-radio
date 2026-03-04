@@ -142,11 +142,13 @@ public class FriendsService {
         friendRepository.save(friendship2);
     }
 
+    @Transactional(readOnly = true)
     public boolean areFriends(User a, User b) {
         return friendRepository.existsByUserAndFriend(a, b) ||
                friendRepository.existsByUserAndFriend(b, a);
     }
 
+    @Transactional(readOnly = true)
     public List<UserDto> searchUsers(String query) {
         User currentUser = authService.getCurrentUser();
         List<User> users = userRepository.searchUsers(query, currentUser.getId());

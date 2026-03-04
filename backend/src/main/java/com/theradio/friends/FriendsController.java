@@ -4,6 +4,8 @@ import com.theradio.auth.AuthService;
 import com.theradio.friends.FriendsService.FriendDto;
 import com.theradio.friends.FriendsService.FriendRequestDto;
 import com.theradio.friends.FriendsService.FriendRequestsDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/friends")
 public class FriendsController {
+    private static final Logger log = LoggerFactory.getLogger(FriendsController.class);
+
     public FriendsController(FriendsService friendsService) {
         this.friendsService = friendsService;
     }
@@ -57,7 +61,8 @@ public class FriendsController {
         try {
             friendsService.addFriend(userId);
             return ResponseEntity.ok(Map.of("status", "added"));
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+            log.error("Failed to add friend userId={}: {}", userId, e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
