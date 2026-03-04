@@ -65,3 +65,118 @@
 .btn-disconnect:hover {
   background: rgba(255, 0, 0, 0.1);
 }
+
+/* Bottom actions row */
+.bottom-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.guide-btn-inline {
+  margin-left: auto;
+}
+
+/* Guide Overlay */
+.guide-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1rem;
+}
+
+.guide-popup {
+  background: var(--bg-green);
+  border: 2px solid var(--border-black);
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid var(--border-black);
+}
+
+.guide-header h2 {
+  border: none;
+  margin: 0;
+  padding: 0;
+  font-size: 1.25rem;
+}
+
+.guide-close {
+  padding: 0.25rem 0.5rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-black);
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.guide-close:hover {
+  background: var(--border-black);
+  color: var(--bg-green);
+}
+
+.guide-content {
+  padding: 1.5rem;
+}
+
+.guide-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.guide-step strong {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.guide-step p {
+  color: var(--text-black);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.guide-tip {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 2px solid var(--border-black);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.highlight {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
