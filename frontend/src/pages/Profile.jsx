@@ -71,7 +71,8 @@ const Profile = () => {
                 </div>
 
                 <div className="guide-tip">
-                  <strong>Get started:</strong> Add <span className="highlight">tofutrash._</span> as a friend to see the app in action!
+                  <p style={{ marginBottom: '0.5rem' }}><strong>Note:</strong> Before connecting Spotify, make sure to let <span className="highlight">tofu</span> know your email to get whitelisted (temporarily).</p>
+                  <p><strong>Get started:</strong> Add <span className="highlight">tofutrash._</span> as a friend to see the app in action!</p>
                 </div>
               </div>
             </div>
